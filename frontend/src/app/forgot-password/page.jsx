@@ -10,7 +10,7 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     setStatus("");
     try {
-      await fetch("http://localhost:4000/password/request-reset", {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/password/request-reset`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

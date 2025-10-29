@@ -19,7 +19,7 @@ export default function ResetPasswordPage() {
     e.preventDefault();
     setStatus("");
     try {
-      const res = await fetch("http://localhost:4000/password/reset", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/password/reset`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, newPassword: password }),

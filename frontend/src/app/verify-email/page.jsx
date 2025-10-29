@@ -14,7 +14,7 @@ export default function VerifyEmailPage() {
           setStatus("Missing token.");
           return;
         }
-        const res = await fetch(`http://localhost:4000/auth/verify-email/${encodeURIComponent(token)}`);
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/verify-email/${encodeURIComponent(token)}`);
         if (res.redirected) {
           // Browser will follow redirect automatically; set informational status
           setStatus("Verified. Redirecting to login...");

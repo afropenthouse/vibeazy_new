@@ -22,7 +22,7 @@ export function AuthProvider({ children }) {
         return;
       }
       try {
-        const res = await fetch("http://localhost:4000/auth/me", {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
@@ -40,7 +40,7 @@ export function AuthProvider({ children }) {
   }, [token]);
 
   const login = async (email, password) => {
-    const res = await fetch("http://localhost:4000/auth/login", {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -57,7 +57,7 @@ export function AuthProvider({ children }) {
   };
 
   const signup = async (name, email, password) => {
-    const res = await fetch("http://localhost:4000/auth/signup", {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/signup`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, password }),

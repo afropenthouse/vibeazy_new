@@ -44,7 +44,7 @@ export default function DiscountCard({ item }) {
               }
               // Save to backend
               try {
-                await fetch("http://localhost:4000/deals/save", {
+                await fetch(`${process.env.NEXT_PUBLIC_API_URL}/deals/save`, {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
