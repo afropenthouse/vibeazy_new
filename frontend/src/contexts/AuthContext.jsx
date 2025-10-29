@@ -4,16 +4,18 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(null);
+  const [token, setToken] = useState(() => {
+    try {
+      if (typeof window !== "undefined") {
+        return localStorage.getItem("authToken");
+      }
+    } catch {}
+    return null;
+  });
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    try {
-      const t = typeof window !== "undefined" && localStorage.getItem("authToken");
-      if (t) setToken(t);
-    } catch {}
-  }, []);
+  // Token is initialized from localStorage in the useState initializer above.
 
   useEffect(() => {
     async function restore() {

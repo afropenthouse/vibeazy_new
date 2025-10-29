@@ -2,16 +2,27 @@
 import { useEffect, useState } from "react";
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState("dark");
+  const [theme, setTheme] = useState(() => {
+    try {
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem("theme");
+        return saved || "dark";
+      }
+    } catch {}
+    return "dark";
+  });
 
+  // Keep document attribute and localStorage in sync with theme changes
   useEffect(() => {
-    const saved = typeof window !== "undefined" && localStorage.getItem("theme");
-    const initial = saved || "dark";
-    setTheme(initial);
     if (typeof document !== "undefined") {
-      document.documentElement.setAttribute("data-theme", initial);
+      document.documentElement.setAttribute("data-theme", theme);
     }
-  }, []);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("theme", theme);
+      } catch {}
+    }
+  }, [theme]);
 
   const toggle = () => {
     const next = theme === "light" ? "dark" : "light";

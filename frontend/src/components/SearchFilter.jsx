@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import DiscountCard from "@/components/DiscountCard";
 
 // NOTE: allowed categories
@@ -136,11 +136,6 @@ export default function SearchFilter() {
   const INITIAL_VISIBLE = 6;
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
 
-  // Reset visible count when the query or category changes
-  useEffect(() => {
-    setVisibleCount(INITIAL_VISIBLE);
-  }, [query, selectedCategory]);
-
   const titleOptions = useMemo(() => Array.from(new Set(DATA.map((d) => d.title))), []);
 
   const filtered = useMemo(() => {
@@ -166,7 +161,10 @@ export default function SearchFilter() {
             list="deal-titles"
             placeholder="Search deals"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setVisibleCount(INITIAL_VISIBLE);
+            }}
             className="w-full sm:w-[60%] lg:w-[55%] rounded-md border border-foreground/10 bg-background px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
           <datalist id="deal-titles">
@@ -177,7 +175,10 @@ export default function SearchFilter() {
           <div className="flex items-center gap-2 sm:flex-1 sm:justify-end flex-wrap">
             <select
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
+              onChange={(e) => {
+                setSelectedCategory(e.target.value);
+                setVisibleCount(INITIAL_VISIBLE);
+              }}
               className="rounded-md border border-foreground/10 bg-background px-3 py-1.5 text-sm"
               aria-label="Filter by category"
             >

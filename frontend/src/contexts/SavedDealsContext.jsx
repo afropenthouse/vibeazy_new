@@ -4,14 +4,15 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 const SavedDealsContext = createContext(null);
 
 export function SavedDealsProvider({ children }) {
-  const [savedMap, setSavedMap] = useState({});
-
-  useEffect(() => {
+  const [savedMap, setSavedMap] = useState(() => {
     try {
-      const raw = typeof window !== "undefined" && localStorage.getItem("savedDeals");
-      if (raw) setSavedMap(JSON.parse(raw));
+      if (typeof window !== "undefined") {
+        const raw = localStorage.getItem("savedDeals");
+        return raw ? JSON.parse(raw) : {};
+      }
     } catch {}
-  }, []);
+    return {};
+  });
 
   useEffect(() => {
     try {
