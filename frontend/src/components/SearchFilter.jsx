@@ -190,7 +190,7 @@ const DATA = [
   {
     id: 19,
     category: "Restaurants",
-    title: "Chicken Republic - Coleslaw",
+    title: "Chicken Republic",
     description: "Crisp coleslaw side, perfect with chicken and fries",
     place: "Lagos",
     image: "/ChickenRepublic_Coleslaw.jpg",
@@ -200,7 +200,7 @@ const DATA = [
   {
     id: 20,
     category: "Restaurants",
-    title: "Pasta Salad (Dark)",
+    title: "Chicken Republic",
     description: "Delicious pasta salad served chilled. A lighter side option.",
     place: "Lagos",
     image: "/PASTA-SALAD-DARK.jpg",
@@ -210,7 +210,7 @@ const DATA = [
   {
     id: 21,
     category: "Restaurants",
-    title: "Chicken Republic - Newly Improved Moin Moin",
+    title: "Chicken Republic",
     description: "Our newly improved moin-moin recipe — softer and more flavorful",
     place: "Lagos",
     image: "/ChickenRepublic_NewlyImprovedMoinMoin.jpg",
@@ -221,7 +221,7 @@ const DATA = [
   {
     id: 22,
     category: "Restaurants",
-    title: "Chicken Republic - Meat Pies",
+    title: "Chicken Republic",
     description: "Freshly baked meat pies with a tasty filling",
     place: "Lagos",
     image: "/ChickenRepublic_MeatPies.jpg",
@@ -231,7 +231,7 @@ const DATA = [
   {
     id: 23,
     category: "Restaurants",
-    title: "Chicken Pies (Dark)",
+    title: "Chicken Republic",
     description: "Hearty chicken pies with a rich filling",
     place: "Lagos",
     image: "/CHICKEN-PIES-DARK.jpg",
@@ -241,7 +241,7 @@ const DATA = [
   {
     id: 24,
     category: "Restaurants",
-    title: "Pepper Sauce (Dark)",
+    title: "Chicken Republic",
     description: "A small tub of perfectly balanced pepper sauce, flavoured with West African herbs and spices",
     place: "Lagos",
     image: "/PEPPER-SAUCE-DARK.jpg",
