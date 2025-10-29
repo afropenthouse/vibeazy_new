@@ -8,10 +8,21 @@ dotenv.config();
 const app = express();
 const prisma = new PrismaClient();
 
-const frontendOrigin = process.env.FRONTEND_URL || "http://localhost:3000";
+// Support a comma-separated list of allowed frontend origins via FRONTEND_URLS
+// Fallback to FRONTEND_URL or http://localhost:3000 for local dev
+const frontendUrlsRaw = process.env.FRONTEND_URLS || process.env.FRONTEND_URL || "http://localhost:3000";
+const ALLOWED_ORIGINS = frontendUrlsRaw.split(",").map((s) => s.trim()).filter(Boolean);
+console.log("CORS allowed origins:", ALLOWED_ORIGINS);
+
 app.use(
   cors({
-    origin: frontendOrigin,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like curl, server-side requests)
+      if (!origin) return callback(null, true);
+      if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+      console.warn(`Blocked CORS request from origin: ${origin}`);
+      return callback(new Error("Not allowed by CORS"), false);
+    },
     credentials: true,
   })
 );
