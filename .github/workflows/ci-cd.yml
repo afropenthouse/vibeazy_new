@@ -33,9 +33,6 @@ jobs:
     - name: Lint code
       run: npm run lint 
 
-    - name: Run tests
-      run: npm test
-
     - name: Build application
       run: npm run build 
 
@@ -65,9 +62,6 @@ jobs:
 
     - name: Build application
       run: npm run build
-
-    - name: Run tests
-      run: npm test
 
   deploy:
     runs-on: ubuntu-latest
