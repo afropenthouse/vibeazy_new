@@ -17,7 +17,7 @@ app.use(
 );
 app.use(express.json());
 
-// Attach prisma to request for route handlers
+// Attach prisma to request for route handlers --
 app.use((req, res, next) => {
   req.prisma = prisma;
   next();
