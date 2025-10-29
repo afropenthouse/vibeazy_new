@@ -8,7 +8,13 @@ dotenv.config();
 const app = express();
 const prisma = new PrismaClient();
 
-app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+const frontendOrigin = process.env.FRONTEND_URL || "http://localhost:3000";
+app.use(
+  cors({
+    origin: frontendOrigin,
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // Attach prisma to request for route handlers
