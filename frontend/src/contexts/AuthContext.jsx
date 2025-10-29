@@ -7,15 +7,13 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => {
     try {
       if (typeof window !== "undefined") {
-        return localStorage.getItem("authToken");
+        return localStorage.getItem("authToken") || null;
       }
     } catch {}
     return null;
   });
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  // Token is initialized from localStorage in the useState initializer above.
 
   useEffect(() => {
     async function restore() {

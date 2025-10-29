@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import DiscountCard from "@/components/DiscountCard";
 
 // NOTE: allowed categories
@@ -135,6 +135,8 @@ export default function SearchFilter() {
   // Visible items control for "See more" behavior
   const INITIAL_VISIBLE = 6;
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
+
+  // Reset visible count directly in change handlers to avoid setState in effects
 
   const titleOptions = useMemo(() => Array.from(new Set(DATA.map((d) => d.title))), []);
 

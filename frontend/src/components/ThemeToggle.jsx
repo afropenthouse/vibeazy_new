@@ -12,27 +12,19 @@ export default function ThemeToggle() {
     return "dark";
   });
 
-  // Keep document attribute and localStorage in sync with theme changes
+  // Reflect theme to DOM and persist. No state updates inside effects.
   useEffect(() => {
     if (typeof document !== "undefined") {
       document.documentElement.setAttribute("data-theme", theme);
     }
     if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem("theme", theme);
-      } catch {}
+      try { localStorage.setItem("theme", theme); } catch {}
     }
   }, [theme]);
 
   const toggle = () => {
     const next = theme === "light" ? "dark" : "light";
     setTheme(next);
-    if (typeof document !== "undefined") {
-      document.documentElement.setAttribute("data-theme", next);
-    }
-    if (typeof window !== "undefined") {
-      localStorage.setItem("theme", next);
-    }
   };
 
   return (

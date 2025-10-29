@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 
 export default function ResetPasswordPage() {
   const [token, setToken] = useState(() => {
-    // Initialize token from URL without calling setState inside an effect
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       return params.get("token") || "";
@@ -15,7 +14,6 @@ export default function ResetPasswordPage() {
   const [showPwd, setShowPwd] = useState(false);
   const [status, setStatus] = useState("");
 
-  // token is initialized from the URL above; avoid calling setState inside an effect
 
   const onSubmit = async (e) => {
     e.preventDefault();
