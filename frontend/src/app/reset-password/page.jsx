@@ -3,18 +3,19 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
 export default function ResetPasswordPage() {
-  const [token, setToken] = useState("");
+  const [token, setToken] = useState(() => {
+    // Initialize token from URL without calling setState inside an effect
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("token") || "";
+    }
+    return "";
+  });
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [status, setStatus] = useState("");
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const t = params.get("token") || "";
-      setToken(t);
-    }
-  }, []);
+  // token is initialized from the URL above; avoid calling setState inside an effect
 
   const onSubmit = async (e) => {
     e.preventDefault();
