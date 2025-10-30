@@ -20,6 +20,17 @@ export default function DiscountCard({ item }) {
     }
   };
 
+  // Map of title -> external offer URL
+  const OFFER_URLS = {
+    "Sweet Sensation": "https://sweetsensation.ng",
+    "The Place": "https://theplace.com.ng/",
+    "Chicken Republic": "https://www.chicken-republic.com/",
+    "Burger King": "https://www.burger-king.ng/",
+    "PieXpress": "https://www.instagram.com/piexpress_ng/?hl=en",
+    "Bite Size": "https://vibeazy-new.vercel.app/",
+  };
+  const offerUrl = OFFER_URLS[item.title];
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -93,9 +104,24 @@ export default function DiscountCard({ item }) {
               )}
             </div>
             <div className="flex items-center gap-2">
-              <button className="inline-flex items-center rounded-md bg-primary text-white px-3 py-1.5 hover:brightness-110 transition">
-                Get Offer
-              </button>
+              {offerUrl ? (
+                <a
+                  href={offerUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center rounded-md bg-primary text-white px-3 py-1.5 hover:brightness-110 transition"
+                  aria-label={`Get offer from ${item.title}`}
+                >
+                  Get Offer
+                </a>
+              ) : (
+                <button
+                  disabled
+                  className="inline-flex items-center rounded-md bg-primary/60 text-white px-3 py-1.5 cursor-not-allowed"
+                >
+                  Get Offer
+                </button>
+              )}
               {/* Removed lower Save text button; save icon now near title */}
             </div>
           </div>

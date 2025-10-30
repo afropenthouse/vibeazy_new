@@ -11,35 +11,35 @@ const slides = [
     headline: "Find Promos & Deals",
     sub: "Discover deals & discounts from your favorite restaurants",
   },
-  {
-    src: "/supermarket.webp",
-    alt: "Restaurants Deals",
-    headline: "Buy More, Spend Less",
-    sub: "Get deals from supermarkets near you",
-  },
-  {
-    src: "/fashion.webp",
-    alt: "Beauty & Spas",
-    headline: "Glow for Less",
-    sub: "Get discounts from top fashion brands",
-  },
-  {
-    src: "/Hotels.webp",
-    alt: "Hotels & Dining",
-    headline: "Save on Hotels",
-    sub: "Enjoy the best deals on hotels",
-  },
+  // {
+  //   src: "/supermarket.webp",
+  //   alt: "Restaurants Deals",
+  //   headline: "Buy More, Spend Less",
+  //   sub: "Get deals from supermarkets near you",
+  // },
+  // {
+  //   src: "/fashion.webp",
+  //   alt: "Beauty & Spas",
+  //   headline: "Glow for Less",
+  //   sub: "Get discounts from top fashion brands",
+  // },
+  // {
+  //   src: "/Hotels.webp",
+  //   alt: "Hotels & Dining",
+  //   headline: "Save on Hotels",
+  //   sub: "Enjoy the best deals on hotels",
+  // },
 ];
 
 export default function Hero() {
   const [index, setIndex] = useState(0);
 
-  useEffect(() => {
-    const id = setInterval(() => {
-      setIndex((i) => (i + 1) % slides.length);
-    }, 5000);
-    return () => clearInterval(id);
-  }, []);
+  // useEffect(() => {
+  //   const id = setInterval(() => {
+  //     setIndex((i) => (i + 1) % slides.length);
+  //   }, 5000);
+  //   return () => clearInterval(id);
+  // }, []);
 
 
   // Helper to split headline on comma and render rest on a new line
