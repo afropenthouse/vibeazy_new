@@ -29,7 +29,8 @@ export default function DiscountCard({ item }) {
     "PieXpress": "https://www.instagram.com/piexpress_ng/?hl=en",
     "Bite Size": "https://vibeazy-new.vercel.app/",
   };
-  const offerUrl = OFFER_URLS[item.title];
+  // Prefer explicit item.url if provided in DATA, otherwise fall back to title->URL map
+  const offerUrl = item.url || OFFER_URLS[item.title];
 
   return (
     <motion.div
