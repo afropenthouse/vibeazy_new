@@ -7,17 +7,27 @@ export default function ThemeToggle() {
   const [mounted, setMounted] = useState(false);
 
   // On mount, read localStorage (client-only) and detect preference.
+  // Use requestAnimationFrame so we don't call setState synchronously within the effect body
+  // (avoids cascading renders and satisfies the linter rule).
   useEffect(() => {
-    setMounted(true);
-    try {
-      const saved = localStorage.getItem("theme");
-      if (saved) {
-        setTheme(saved);
-      } else if (window.matchMedia) {
-        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-        setTheme(prefersDark ? "dark" : "light");
-      }
-    } catch {}
+    let rafId;
+    if (typeof window !== "undefined") {
+      rafId = window.requestAnimationFrame(() => {
+        setMounted(true);
+        try {
+          const saved = localStorage.getItem("theme");
+          if (saved) {
+            setTheme(saved);
+          } else if (window.matchMedia) {
+            const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+            setTheme(prefersDark ? "dark" : "light");
+          }
+        } catch {}
+      });
+    }
+    return () => {
+      if (typeof window !== "undefined" && rafId) window.cancelAnimationFrame(rafId);
+    };
   }, []);
 
   // Reflect theme to DOM and persist.
