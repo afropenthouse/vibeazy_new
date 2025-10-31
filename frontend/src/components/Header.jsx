@@ -17,9 +17,12 @@ export default function Header() {
           {/* Nav */}
           <nav className="hidden sm:flex items-center gap-6 text-sm">
             <Link href="/" className="hover:text-primary transition-colors">Home</Link>
-            {isAuthenticated && (
-              <Link href="/saved" className="hover:text-primary transition-colors">Save Deals</Link>
-            )}
+            <Link
+              href={isAuthenticated ? "/saved" : "/login?next=/saved"}
+              className="hover:text-primary transition-colors"
+            >
+              Save Deals
+            </Link>
             <Link href="#contact" className="hover:text-primary transition-colors">Contact</Link>
           </nav>
           {/* Auth state */}

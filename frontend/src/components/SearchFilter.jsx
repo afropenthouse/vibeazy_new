@@ -3,7 +3,7 @@ import { useMemo, useState, useEffect } from "react";
 import DiscountCard from "@/components/DiscountCard";
 
 // NOTE: allowed categories
-const CATEGORY_OPTIONS = ["All", "Restaurants", "Relaxation", "Fashion", "Supermarkets"];
+const CATEGORY_OPTIONS = ["All", "Restaurants", "Fashion"];
 
 const DATA = [
   {
@@ -541,7 +541,7 @@ export default function SearchFilter() {
   return (
     <section id="hot-deals" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
       <h2 className="text-2xl font-bold">Hot Deals Near You</h2>
-      <p className="text-foreground/70 mt-1">Discover amazing discounts from local places. Updated in real-time.</p>
+      <p className="text-foreground/70 mt-1">Discover amazing deals from local businesses. Updated in real-time.</p>
       <div className="flex flex-col gap-4 mt-6">
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
           <input

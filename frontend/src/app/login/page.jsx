@@ -26,7 +26,13 @@ export default function LoginPage() {
     setError("");
     try {
       await login(email, password);
-      router.push("/welcome");
+      // If a `next` query param is present, redirect there after login
+      let nextPath = "/welcome";
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("next")) nextPath = params.get("next");
+      }
+      router.push(nextPath);
     } catch (err) {
       const msg = err?.message || "Invalid email or password";
       setError(msg);
