@@ -4,19 +4,16 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 const SavedDealsContext = createContext(null);
 
 export function SavedDealsProvider({ children }) {
-  // Start with a deterministic state so server and client markup match.
-  const [savedMap, setSavedMap] = useState({});
-
-  // Load saved deals after mount (client-only) to avoid hydration mismatch.
-  useEffect(() => {
+  // Initialize from localStorage lazily to avoid setState in effects
+  const [savedMap, setSavedMap] = useState(() => {
     try {
       if (typeof window !== "undefined") {
         const raw = localStorage.getItem("savedDeals");
-        const parsed = raw ? JSON.parse(raw) : {};
-        setSavedMap(parsed);
+        return raw ? JSON.parse(raw) : {};
       }
     } catch {}
-  }, []);
+    return {};
+  });
 
   useEffect(() => {
     try {
