@@ -21,20 +21,20 @@ export default function Header() {
               href={isAuthenticated ? "/saved" : "/login?next=/saved"}
               className="hover:text-primary transition-colors"
             >
-              Save Deals
+              Saved Deals
             </Link>
-            <Link href="#contact" className="hover:text-primary transition-colors">Contact</Link>
+            <Link href="#contact" className="hover:text-primary transition-colors">Contact us</Link>
           </nav>
           {/* Auth state */}
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
               <span className="text-xs sm:text-sm text-foreground/80">Hi, {user?.name || user?.email}</span>
-              <Link
+              {/* <Link
                 href="/saved"
                 className="inline-flex items-center rounded-md border border-foreground/20 text-foreground px-2 py-1 text-xs sm:px-3 sm:py-1.5 sm:text-sm hover:bg-foreground/5 transition"
               >
                 Saved
-              </Link>
+              </Link> */}
               <button
                 type="button"
                 onClick={logout}

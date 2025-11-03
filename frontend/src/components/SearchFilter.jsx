@@ -83,7 +83,7 @@ const DATA = [
     description: "Get any 4 Pies & 2 drinks",
     place: "Lagos",
     image: "/drinks.webp",
-    priceOriginal: 3900,
+    priceOriginal: 4900,
     priceCurrent: 3650,
   },
   {
@@ -183,8 +183,8 @@ const DATA = [
     description: "Get any 2 pies & 35cl Drink",
     place: "Lagos",
     image: "/drinks.webp",
-    priceOriginal: 1950,
-    priceCurrent: 1850,
+    priceOriginal: 2950,
+    priceCurrent: 1950,
   },
   {
     id: 24,
@@ -234,7 +234,7 @@ const DATA = [
     place: "Lagos",
     image: "/drinks.webp",
     priceOriginal: 5800,
-    priceCurrent: 5450,
+    priceCurrent: 5100,
   },
   {
     id: 26,
@@ -263,8 +263,8 @@ const DATA = [
     description: "A quarter flame grilled chicken prepared with garlic & herb or hot Rodo sauce",
     place: "Lagos",
     image: "/ChickenRepublic_QuarterFlamerGrilled.jpg",
-    priceOriginal: 7500,
-    priceCurrent: 6800,
+    priceOriginal: 7700,
+    priceCurrent: 6700,
   },
   {
     id: 8,
@@ -324,7 +324,7 @@ const DATA = [
     place: "Lagos",
     image: "/drinks.webp",
     priceOriginal: 5800,
-    priceCurrent: 5450,
+    priceCurrent: 5000,
   },
   {
     id: 41,
@@ -354,7 +354,7 @@ const DATA = [
     place: "Lagos",
     image: "/ChickenRepublic_QuarterFlamerGrilled.jpg",
     priceOriginal: 7500,
-    priceCurrent: 6800,
+    priceCurrent: 6000,
   },
   {
     id: 44,
@@ -383,7 +383,7 @@ const DATA = [
     description: "A quarter flame grilled chicken prepared with garlic & herb or hot Rodo sauce",
     place: "Lagos",
     image: "/ChickenRepublic_QuarterFlamerGrilled.jpg",
-    priceOriginal: 7500,
+    priceOriginal: 7900,
     priceCurrent: 6800,
   },
   {
@@ -454,8 +454,8 @@ const DATA = [
     description: "Enjoy a full Rotisserie chicken with 4 portions of rice or spaghetti and 4 PET drinks — perfect for groups.",
     place: "Lagos",
     image: "/BIG-CREW-MEAL-DARK.jpg",
-    priceOriginal: 30000,
-    priceCurrent: 28000,
+    priceOriginal: 31000,
+    priceCurrent: 27000,
   },
   {
     id: 54,
@@ -549,7 +549,9 @@ export default function SearchFilter() {
       <h2 className="text-2xl font-bold">Hot Deals Near You</h2>
       <p className="text-foreground/70 mt-1">Discover amazing deals from local businesses. Updated in real-time.</p>
       <div className="flex flex-col gap-4 mt-6">
-        <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+        {/* Sticky search controls bar */}
+        <div className="sticky top-20 z-40 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3 bg-background/90 backdrop-blur border-b border-foreground/10">
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
           <input
             type="text"
             list="deal-titles"
@@ -580,6 +582,7 @@ export default function SearchFilter() {
                 <option key={opt} value={opt}>{opt}</option>
               ))}
             </select>
+          </div>
           </div>
         </div>
 

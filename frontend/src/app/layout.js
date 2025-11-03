@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import ScrollButtons from "@/components/ScrollButtons";
 import { SavedDealsProvider } from "@/contexts/SavedDealsContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 
@@ -16,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "VibeEazy — Promos & deals from your Favorite Restaurants!",
-  description: "Find fast food discounts across Restaurants, Beauty & Spas, and Supermarkets.",
+  title: "Vibeazy - Find Promos & Deals from your Favorite Restaurants!",
+  description: "Find Promos & Deals from your Favorite Restaurants!",
 };
 
 export default function RootLayout({ children }) {
@@ -29,6 +30,7 @@ export default function RootLayout({ children }) {
             <Header />
             {children}
             <Footer />
+            <ScrollButtons />
           </SavedDealsProvider>
         </AuthProvider>
       </body>

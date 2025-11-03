@@ -106,8 +106,8 @@ export default function DiscountCard({ item }) {
             }}
             className="inline-flex items-center justify-center rounded-full p-2 hover:bg-foreground/10 transition"
             aria-pressed={saved}
-            aria-label={saved ? "Unsave deal" : "Save deal"}
-            title={saved ? "Saved" : "Save"}
+            aria-label={saved ? "Unsave deal" : "Save deals"}
+            title={saved ? "Saved" : "Save deal"}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
