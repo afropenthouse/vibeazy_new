@@ -3,7 +3,7 @@ import { useMemo, useState, useEffect } from "react";
 import DiscountCard from "@/components/DiscountCard";
 
 // NOTE: allowed categories
-const CATEGORY_OPTIONS = ["All", "Restaurants", "Fashion"];
+const CATEGORY_OPTIONS = ["All", "Restaurants"];
 
 const DATA = [
   {
@@ -193,8 +193,8 @@ const DATA = [
     description: "A small tub of perfectly balanced pepper sauce, flavoured with West African herbs and spices",
     place: "Lagos",
     image: "/PEPPER-SAUCE-DARK.jpg",
-    priceOriginal: 600,
-    priceCurrent: 600,
+    priceOriginal: 800,
+    priceCurrent: 1200,
   },
   {
     id: 5,
@@ -425,6 +425,97 @@ const DATA = [
     image: "/meal-drink.jpg",
     priceOriginal: 3900,
     priceCurrent: 3200,
+  },
+  // New items added with provided image names
+  {
+    id: 51,
+    category: "Restaurants",
+    title: "Chicken Republic",
+    description: "Half rotisserie chicken served with your choice of rice or spaghetti and a refreshing PET drink.",
+    place: "Lagos",
+    image: "/7-HALF-ROTISSERIE-MEAL-DARK-e1636533944472.jpg",
+    priceOriginal: 12000,
+    priceCurrent: 10600,
+  },
+  {
+    id: 52,
+    category: "Restaurants",
+    title: "Chicken Republic",
+    description: "Half rotisserie chicken served with regular or large chips plus a refreshing PET drink.",
+    place: "Lagos",
+    image: "/8-HALF-ROTISSERIE-CHIPS-MEAL-e1636534554319.jpg",
+    priceOriginal: 12600,
+    priceCurrent: 10600,
+  },
+  {
+    id: 53,
+    category: "Restaurants",
+    title: "Chicken Republic",
+    description: "Enjoy a full Rotisserie chicken with 4 portions of rice or spaghetti and 4 PET drinks — perfect for groups.",
+    place: "Lagos",
+    image: "/BIG-CREW-MEAL-DARK.jpg",
+    priceOriginal: 30000,
+    priceCurrent: 28000,
+  },
+  {
+    id: 54,
+    category: "Restaurants",
+    title: "Chicken Republic",
+    description: "Quarter rotisserie chicken served with choice of sides and a PET drink.",
+    place: "Lagos",
+    image: "/ChickenRepublic_QuarterRotisserie.jpg",
+    priceOriginal: 6000,
+    priceCurrent: 4000,
+  },
+  {
+    id: 55,
+    category: "Restaurants",
+    title: "Chicken Republic",
+    description: "Half rotisserie chicken served with choice of sides and a PET drink.",
+    place: "Lagos",
+    image: "/ChickenRepublic_HalfRotisserie.jpg",
+    priceOriginal: 20000,
+    priceCurrent: 18000,
+  },
+  {
+    id: 56,
+    category: "Restaurants",
+    title: "Chicken Republic",
+    description: "Whole rotisserie chicken — great for families and groups.",
+    place: "Lagos",
+    image: "/ChickenRepublic_FullChicken.jpg",
+    priceOriginal: 20000,
+    priceCurrent: 18000,
+  },
+  {
+    id: 57,
+    category: "Restaurants",
+    title: "Chicken Republic",
+    description: "NEW Double Spicy ChickWhizz sandwich served with chips and a drink — double the spice, double the flavour.",
+    place: "Lagos",
+    image: "/whizz.png", 
+    priceOriginal: 6200,
+    priceCurrent: 4200,
+  },
+  {
+    id: 58,
+    category: "Restaurants",
+    title: "Chicken Republic",
+    description: "Big Boyz Meal — a hearty chicken meal with rice, sides and a refreshing drink.",
+    place: "Lagos",
+    image: "/ChickenRepublic_Big_Boyz_DARK-scaled.jpg",
+    priceOriginal: 7700,
+    priceCurrent: 5700,
+  },
+  {
+    id: 59,
+    category: "Restaurants",
+    title: "Chicken Republic",
+    description: "Chief Burger — soulfully spiced chicken on a fresh bun with lettuce, cheese and our secret sauce.",
+    place: "Lagos",
+    image: "/ChickenRepublic_ChiefBurger_WHITE-scaled.jpg",
+    priceOriginal: 4500,
+    priceCurrent: 2500,
   },
 ];
   // Reset visible count directly in change handlers to avoid setState in effects

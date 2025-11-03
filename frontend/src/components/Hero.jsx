@@ -7,8 +7,8 @@ import Link from "next/link";
 const slides = [
   {
     src: "/food.webp",
-    alt: "Find Promos & Deals",
-    headline: "Find Promos & Deals",
+    alt: "Find Promos & Deals from your Favorite Restaurants",
+    headline: "Find Promos & Deals from your Favorite Restaurants",
     sub: "Discover deals & discounts from your favorite restaurants",
   },
   // {
@@ -106,19 +106,21 @@ export default function Hero() {
           
         </div>
 
-        {/* Indicators */}
-        <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
-          {slides.map((_, i) => (
-            <button
-              key={i}
-              aria-label={`Go to slide ${i + 1}`}
-              onClick={() => setIndex(i)}
-              className={`h-2.5 w-2.5 rounded-full transition ${
-                i === index ? "bg-white" : "bg-white/40 hover:bg-white/70"
-              }`}
-            />
-          ))}
-        </div>
+        {/* Indicators (hidden when there's only one slide) */}
+        {slides.length > 1 && (
+          <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
+            {slides.map((_, i) => (
+              <button
+                key={i}
+                aria-label={`Go to slide ${i + 1}`}
+                onClick={() => setIndex(i)}
+                className={`h-2.5 w-2.5 rounded-full transition ${
+                  i === index ? "bg-white" : "bg-white/40 hover:bg-white/70"
+                }`}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

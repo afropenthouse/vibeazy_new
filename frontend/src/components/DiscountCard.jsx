@@ -19,6 +19,30 @@ export default function DiscountCard({ item }) {
       return `₦${Number(value).toLocaleString()}`;
     }
   };
+  // Normalize prices so UI always shows a discount: original (struck-through) is the higher value
+  const normalizePrices = (original, current) => {
+    if (typeof original !== "number" || typeof current !== "number") {
+      return { original, current };
+    }
+    if (original >= current) return { original, current };
+    return { original: current, current: original };
+  };
+
+  // Discount percentage, using normalized values; floors decimals
+  const getPercentOff = (original, current) => {
+    if (typeof original !== "number" || typeof current !== "number") return null;
+    if (original <= 0 || current <= 0) return null;
+    if (original === current) return 0;
+    const diff = original - current;
+    if (diff <= 0) return 0;
+    return Math.floor((diff / original) * 100);
+  };
+
+  const { original: displayOriginal, current: displayCurrent } = normalizePrices(
+    item.priceOriginal,
+    item.priceCurrent
+  );
+  const percentOff = getPercentOff(displayOriginal, displayCurrent);
 
   // Map of title -> external offer URL
   const OFFER_URLS = {
@@ -43,6 +67,24 @@ export default function DiscountCard({ item }) {
       <div className="relative">
         <Image src={item.image} alt={item.title} width={800} height={600} className="h-40 w-full object-cover" />
         <div className="absolute inset-0 bg-secondary/20 mix-blend-multiply" />
+        {percentOff !== null && (
+          <span
+            className="absolute top-2 right-2 z-10 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/95 text-white text-xs font-semibold shadow-lg ring-1 ring-white/20 backdrop-blur-sm"
+            aria-label={`${percentOff}% Off`}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              className="h-3.5 w-3.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M7 10l5 5 5-5" />
+            </svg>
+            {percentOff}% Off
+          </span>
+        )}
       </div>
   <div className="p-4 flex-1 flex flex-col">
         <div className="flex items-center justify-between">
@@ -97,11 +139,11 @@ export default function DiscountCard({ item }) {
         {(item.priceCurrent || item.priceOriginal) && (
           <div className="mt-auto pt-3 flex items-center justify-between">
             <div className="flex items-baseline gap-3">
-              {item.priceCurrent && (
-                <span className="text-base font-semibold text-primary price-current">{formatNaira(item.priceCurrent)}</span>
+              {typeof displayCurrent === "number" && (
+                <span className="text-base font-semibold text-primary price-current">{formatNaira(displayCurrent)}</span>
               )}
-              {item.priceOriginal && (
-                <span className="text-sm text-foreground/60 line-through price-original">{formatNaira(item.priceOriginal)}</span>
+              {typeof displayOriginal === "number" && (
+                <span className="text-sm text-foreground/60 line-through price-original">{formatNaira(displayOriginal)}</span>
               )}
             </div>
             <div className="flex items-center gap-2">
@@ -113,7 +155,7 @@ export default function DiscountCard({ item }) {
                   className="inline-flex items-center rounded-md bg-primary text-white px-3 py-1.5 hover:brightness-110 transition"
                   aria-label={`Get offer from ${item.title}`}
                 >
-                  Get Offer
+                  Place Order
                 </a>
               ) : (
                 <button

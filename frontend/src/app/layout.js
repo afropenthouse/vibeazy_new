@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "VibeEazy — Enjoy More, Spend Less!",
+  title: "VibeEazy — Promos & deals from your Favorite Restaurants!",
   description: "Find fast food discounts across Restaurants, Beauty & Spas, and Supermarkets.",
 };
 
