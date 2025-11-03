@@ -307,94 +307,6 @@ const DATA = [
     priceCurrent: 1000,
   },
   {
-    id: 31,
-    category: "Supermarkets",
-    title: "Supermart",
-    url: "https://www.supermart.ng",
-    description: "Everyday groceries and pantry staples — quick and convenient.",
-    place: "Lagos",
-    image: "/spmex3809.webp",
-    priceOriginal: 2500,
-    priceCurrent: 1800,
-  },
-  {
-    id: 32,
-    category: "Supermarkets",
-    title: "Supermart",
-    url: "https://www.supermart.ng",
-    description: "Fresh produce and chilled items for your weekly shop.",
-    place: "Lagos",
-    image: "/spxvl1032.jpg",
-    priceOriginal: 3200,
-    priceCurrent: 2400,
-  },
-  {
-    id: 33,
-    category: "Supermarkets",
-    title: "Supermart",
-    url: "https://www.supermart.ng",
-    description: "Baked goods and artisanal breads — hot from the oven.",
-    place: "Lagos",
-    image: "/brea.webp",
-    priceOriginal: 800,
-    priceCurrent: 600,
-  },
-  {
-    id: 34,
-    category: "Supermarkets",
-    title: "Supermart",
-    url: "https://www.supermart.ng",
-    description: "Household supplies and pantry essentials at affordable prices.",
-    place: "Lagos",
-    image: "/rspwxyz350.webp",
-    priceOriginal: 2100,
-    priceCurrent: 1500,
-  },
-  {
-    id: 35,
-    category: "Supermarkets",
-    title: "Supermart",
-    url: "https://www.supermart.ng",
-    description: "Quality frozen and fresh products — great for family meals.",
-    place: "Lagos",
-    image: "/spmex102_20_2.webp",
-    priceOriginal: 4000,
-    priceCurrent: 3100,
-  },
-  {
-    id: 36,
-    category: "Supermarkets",
-    title: "Supermart",
-    url: "https://www.supermart.ng",
-    description: "Wide selection of branded goods and daily necessities.",
-    place: "Lagos",
-    image: "/spmt1051_9a33cd5f-567b-4cf2-8857-bffc765b52ad.webp",
-    priceOriginal: 2900,
-    priceCurrent: 2200,
-  },
-  {
-    id: 37,
-    category: "Supermarkets",
-    title: "Supermart",
-    url: "https://www.supermart.ng",
-    description: "Fresh deli items and ready-to-eat options for busy days.",
-    place: "Lagos",
-    image: "/spmt1062.webp",
-    priceOriginal: 2300,
-    priceCurrent: 1700,
-  },
-  {
-    id: 38,
-    category: "Supermarkets",
-    title: "Supermart",
-    url: "https://www.supermart.ng",
-    description: " Snacks, drinks and quick-grab items for on-the-go.",
-    place: "Lagos",
-    image: "/spxspz1199.webp",
-    priceOriginal: 1200,
-    priceCurrent: 900,
-  },
-  {
     id: 39,
     category: "Restaurants",
     title: "Burger King",
@@ -538,6 +450,9 @@ export default function SearchFilter() {
     });
   }, [query, selectedCategory]);
 
+  const filteredCount = filtered.length;
+  const displayedCount = Math.min(visibleCount, filteredCount);
+
   return (
     <section id="hot-deals" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
       <h2 className="text-2xl font-bold">Hot Deals Near You</h2>
@@ -575,6 +490,15 @@ export default function SearchFilter() {
               ))}
             </select>
           </div>
+        </div>
+
+        {/* Results count placed right after search controls */}
+        <div className="text-sm text-foreground/70 mt-3">
+          {filteredCount > 0 ? (
+            <span>Displaying {displayedCount} of {filteredCount} deals</span>
+          ) : (
+            <span>No results yet.</span>
+          )}
         </div>
 
         {filtered.length > 0 ? (
