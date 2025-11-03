@@ -17,16 +17,6 @@ const DATA = [
     priceCurrent: 7500,
   },
   {
-    id: 25,
-    category: "Restaurants",
-    title: "The Place",
-    description: "Fried plantain served warm — a sweet and savory side.",
-    place: "Lagos",
-    image: "/Plantain.jpg",
-    priceOriginal: 1200,
-    priceCurrent: 800,
-  },
-  {
     id: 13,
     category: "Restaurants",
     title: "Chicken Republic",
@@ -145,6 +135,16 @@ const DATA = [
     image: "/hamburger1.webp",
     priceOriginal: 5000,
     priceCurrent: 3000,
+  },
+  {
+    id: 25,
+    category: "Restaurants",
+    title: "The Place",
+    description: "Fried plantain served warm — a sweet and savory side.",
+    place: "Lagos",
+    image: "/Plantain.jpg",
+    priceOriginal: 1200,
+    priceCurrent: 800,
   },
   {
     id: 27,
