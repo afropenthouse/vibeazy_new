@@ -7,10 +7,18 @@ import { useRouter } from "next/navigation";
 
 const slides = [
   {
-    // First slide as a 4-image collage to highlight major categories
-    images: ["/enter.webp", "/fashionhero.webp", "/air.webp", "/vegetable.webp"],
-    alt: "All Discounts & Deals in one Place.",
-    headline: "All Discounts & Deals in one Place.",
+    // First slide as a 6-image collage to highlight major categories
+    // Ensure all entries are valid public paths (start with '/')
+    images: [
+      "/enter.webp",
+      "/vegetable.webp",
+      "/fashionhero.webp",
+      "/spa.webp",
+      "/hotel1.webp",
+      "/air1.webp",
+    ],
+    alt: "All Discounts & Deals in Nigeria in One Place.",
+    headline: "All Discounts & Deals in Nigeria in One Place.",
     sub: "Search and claim the best offers before they expire.",
   },
   {
@@ -65,22 +73,25 @@ export default function Hero() {
       <div className="relative h-[45vh] sm:h-[55vh] lg:h-[60vh]">
         {/* Background image or collage for first slide */}
         {slides[index].images ? (
-          <div className="absolute inset-0 grid grid-cols-2 sm:grid-cols-4 gap-0 p-0">
-            {slides[index].images.map((img, i) => (
-              <div
-                key={i}
-                className="relative w-full"
-                style={{ aspectRatio: "3 / 4" }}
-              >
-                <Image
-                  src={img}
-                  alt={slides[index].alt}
-                  fill
-                  className="object-cover"
-                  priority
-                />
-              </div>
-            ))}
+          <div className="absolute inset-0 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-0 p-0">
+            {slides[index].images.map((img, i) => {
+              // normalize src: if a filename was provided without leading slash, add it
+              const src = typeof img === "string" && !img.startsWith("/") && !img.startsWith("http") ? `/${img}` : img;
+              return (
+                <div
+                  key={i}
+                  className="relative w-full h-full"
+                >
+                  <Image
+                    src={src}
+                    alt={slides[index].alt}
+                    fill
+                    className="object-cover"
+                    priority
+                  />
+                </div>
+              );
+            })}
           </div>
         ) : (
           <Image
