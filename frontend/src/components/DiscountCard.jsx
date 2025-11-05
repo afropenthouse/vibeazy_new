@@ -257,7 +257,7 @@ export default function DiscountCard({ item }) {
                     className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary/90 text-white px-4 py-2.5 hover:shadow-lg transition-all duration-200 hover:scale-105 font-semibold text-sm"
                     aria-label={`Get offer from ${item.title}`}
                   >
-                    <span>Claim Order</span>
+                    <span>Get Offer</span>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                     </svg>
