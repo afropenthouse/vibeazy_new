@@ -1,6 +1,8 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
+import AnnouncementBar from "@/components/AnnouncementBar";
+import CategoriesNav from "@/components/CategoriesNav";
 import Footer from "@/components/Footer";
 import ScrollButtons from "@/components/ScrollButtons";
 import { SavedDealsProvider } from "@/contexts/SavedDealsContext";
@@ -23,11 +25,13 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" data-theme="dark">
+    <html lang="en" data-theme="light">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}>
         <AuthProvider>
           <SavedDealsProvider>
+            <AnnouncementBar />
             <Header />
+            <CategoriesNav />
             {children}
             <Footer />
             <ScrollButtons />

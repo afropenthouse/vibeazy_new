@@ -2,10 +2,19 @@
 import { useMemo, useState, useEffect } from "react";
 import DiscountCard from "@/components/DiscountCard";
 
-// NOTE: allowed categories
-const CATEGORY_OPTIONS = ["All", "Restaurants"];
+// NOTE: allowed categories (expanded for UI; filtering shows those present)
+const CATEGORY_OPTIONS = [
+  "All",
+  "Restaurants",
+  "Fashion",
+  "Electronics",
+  "Furniture",
+  "Beauty",
+  "Travel",
+  "Entertainment",
+];
 
-const DATA = [
+export const DEALS_DATA = [
   {
     id: 7,
     category: "Restaurants",
@@ -518,11 +527,25 @@ const DATA = [
     priceCurrent: 2500,
   },
 ];
+
+// Backward alias for internal usage in this component
+const DATA = DEALS_DATA;
   // Reset visible count directly in change handlers to avoid setState in effects
 
 export default function SearchFilter() {
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+
+  // Read initial filters from URL (?q=...&category=...)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get("q") || "";
+      const cat = params.get("category") || "All";
+      if (q) setQuery(q);
+      if (cat && CATEGORY_OPTIONS.includes(cat)) setSelectedCategory(cat);
+    }
+  }, []);
   // Visible items control for "See more" behavior
   const INITIAL_VISIBLE = 6;
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
@@ -550,7 +573,7 @@ export default function SearchFilter() {
       <p className="text-foreground/70 mt-1">Discover amazing deals from local businesses. Updated in real-time.</p>
       <div className="flex flex-col gap-4 mt-6">
         {/* Sticky search controls bar */}
-        <div className="sticky top-20 z-40 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3 bg-background/90 backdrop-blur border-b border-foreground/10">
+        <div id="hot-deals" className="sticky top-20 z-40 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3 bg-background/90 backdrop-blur border-b border-foreground/10">
           <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
           <input
             type="text"

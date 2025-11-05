@@ -1,15 +1,16 @@
 "use client";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const slides = [
   {
     src: "/food.webp",
-    alt: "Find Promos & Deals from your Favorite Restaurants",
-    headline: "Find Promos & Deals from your Favorite Restaurants",
-    sub: "Discover deals & discounts from your favorite restaurants",
+    alt: "Discover discounts across Nigeria — all in one place.",
+    headline: "Discover discounts across Nigeria — all in one place.",
+    sub: "Search and claim the best offers before they expire.",
   },
   // {
   //   src: "/supermarket.webp",
@@ -33,6 +34,7 @@ const slides = [
 
 export default function Hero() {
   const [index, setIndex] = useState(0);
+  const router = useRouter();
 
   // useEffect(() => {
   //   const id = setInterval(() => {
@@ -56,7 +58,7 @@ export default function Hero() {
 
   return (
     <section className="relative overflow-hidden">
-      <div className="relative h-[60vh] sm:h-[70vh] lg:h-[80vh]">
+      <div className="relative h-[45vh] sm:h-[55vh] lg:h-[60vh]">
         {/* Background image */}
         <Image
           src={slides[index].src}
@@ -71,7 +73,7 @@ export default function Hero() {
 
         {/* Content */}
         <div className="relative z-10 h-full flex items-center">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full pt-8 pb-10 sm:pt-10 sm:pb-12">
             <AnimatePresence mode="wait">
               <motion.div
                 key={`text-${index}`}
@@ -79,19 +81,20 @@ export default function Hero() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 40 }}
                 transition={{ duration: 0.7 }}
-                className="max-w-2xl"
+                className="max-w-xl"
               >
-                <h1 className="text-3xl sm:text-4xl lg:text-6xl font-extrabold tracking-tight text-white">
+                <h1 className="text-2xl sm:text-3xl lg:text-5xl font-extrabold tracking-tight text-white">
                   {renderHeadline(slides[index].headline)}
                 </h1>
-                <p className="mt-3 sm:mt-4 text-white/80 text-sm sm:text-base lg:text-lg">
+                <p className="mt-3 sm:mt-4 text-white/80 text-sm sm:text-base">
                   {slides[index].sub}
                 </p>
+                {/* removed inline search per request */}
               </motion.div>
             </AnimatePresence>
 
             {/* Static CTA buttons (moved outside the animated text block so they don't animate) */}
-            <div className="mt-6 flex gap-3">
+            <div className="mt-8 sm:mt-10 flex gap-3">
               <Link
                 href="#hot-deals"
                 className="rounded-md bg-primary text-white px-5 py-3 text-base sm:text-lg hover:brightness-110 transition"
