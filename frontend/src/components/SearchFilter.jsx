@@ -542,8 +542,13 @@ export default function SearchFilter() {
       const params = new URLSearchParams(window.location.search);
       const q = params.get("q") || "";
       const cat = params.get("category") || "All";
-      if (q) setQuery(q);
-      if (cat && CATEGORY_OPTIONS.includes(cat)) setSelectedCategory(cat);
+      const rafId = window.requestAnimationFrame(() => {
+        if (q) setQuery(q);
+        if (cat && CATEGORY_OPTIONS.includes(cat)) setSelectedCategory(cat);
+      });
+      return () => {
+        window.cancelAnimationFrame(rafId);
+      };
     }
   }, []);
   // Visible items control for "See more" behavior

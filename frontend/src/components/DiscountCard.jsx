@@ -54,13 +54,20 @@ export default function DiscountCard({ item }) {
   
   const offerUrl = item.url || OFFER_URLS[item.title];
 
-  const computeExpiresAt = () => {
-    if (item.expiresAt) return new Date(item.expiresAt).getTime();
-    const days = (item.id % 5) + 2;
-    return Date.now() + days * 24 * 60 * 60 * 1000;
-  };
+  // Initialize with deterministic value (pure at render). Defer Date.now to effect.
+  const [expiresAt, setExpiresAt] = useState(() => {
+    return item.expiresAt ? new Date(item.expiresAt).getTime() : null;
+  });
   
-  const [expiresAt] = useState(computeExpiresAt());
+  useEffect(() => {
+    if (expiresAt == null) {
+      const days = (item.id % 5) + 2;
+      const rafId = window.requestAnimationFrame(() => {
+        setExpiresAt(Date.now() + days * 24 * 60 * 60 * 1000);
+      });
+      return () => window.cancelAnimationFrame(rafId);
+    }
+  }, [expiresAt, item.id]);
   const [timeLeft, setTimeLeft] = useState("");
   
   useEffect(() => {
