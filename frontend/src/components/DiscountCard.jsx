@@ -69,12 +69,18 @@ export default function DiscountCard({ item }) {
     }
   }, [expiresAt, item.id]);
   const [timeLeft, setTimeLeft] = useState("");
+  // expiry badge classes are derived from ticking time; keep render pure
+  const [expiryBadgeClass, setExpiryBadgeClass] = useState(
+    "bg-primary/10 text-primary border border-primary/20"
+  );
   
   useEffect(() => {
     const tick = () => {
       const diff = expiresAt - Date.now();
+      // Update timeLeft text
       if (diff <= 0) {
         setTimeLeft("Expired");
+        setExpiryBadgeClass("bg-red-600 text-white");
         return;
       }
       const d = Math.floor(diff / (24 * 60 * 60 * 1000));
@@ -87,6 +93,17 @@ export default function DiscountCard({ item }) {
       parts.push(String(m).padStart(2, "0"));
       parts.push(String(s).padStart(2, "0"));
       setTimeLeft(`${d > 0 ? parts[0] + "d " : ""}${parts.slice(d > 0 ? 1 : 0).join(":")}`);
+
+      // Update expiry badge class based on ms left
+      const sixHours = 6 * 60 * 60 * 1000;
+      const oneDay = 24 * 60 * 60 * 1000;
+      if (diff <= sixHours) {
+        setExpiryBadgeClass("bg-yellow-100 text-yellow-700 border border-yellow-300");
+      } else if (diff <= oneDay) {
+        setExpiryBadgeClass("bg-orange-100 text-orange-700 border border-orange-300");
+      } else {
+        setExpiryBadgeClass("bg-primary/10 text-primary border border-primary/20");
+      }
     };
     tick();
     const id = setInterval(tick, 1000);
@@ -94,16 +111,8 @@ export default function DiscountCard({ item }) {
   }, [expiresAt]);
 
   // Derive simple urgency state for styling the expiry badge
-  const getExpiryBadgeClasses = () => {
-    if (!expiresAt) return "bg-primary/10 text-primary border border-primary/20";
-    const msLeft = expiresAt - Date.now();
-    if (msLeft <= 0) return "bg-red-600 text-white";
-    const sixHours = 6 * 60 * 60 * 1000;
-    const oneDay = 24 * 60 * 60 * 1000;
-    if (msLeft <= sixHours) return "bg-yellow-100 text-yellow-700 border border-yellow-300";
-    if (msLeft <= oneDay) return "bg-orange-100 text-orange-700 border border-orange-300";
-    return "bg-primary/10 text-primary border border-primary/20";
-  };
+  // keep render pure: use class from state updated in effect
+  const getExpiryBadgeClasses = () => expiryBadgeClass;
 
   return (
     <motion.div
