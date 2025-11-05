@@ -93,6 +93,18 @@ export default function DiscountCard({ item }) {
     return () => clearInterval(id);
   }, [expiresAt]);
 
+  // Derive simple urgency state for styling the expiry badge
+  const getExpiryBadgeClasses = () => {
+    if (!expiresAt) return "bg-primary/10 text-primary border border-primary/20";
+    const msLeft = expiresAt - Date.now();
+    if (msLeft <= 0) return "bg-red-600 text-white";
+    const sixHours = 6 * 60 * 60 * 1000;
+    const oneDay = 24 * 60 * 60 * 1000;
+    if (msLeft <= sixHours) return "bg-yellow-100 text-yellow-700 border border-yellow-300";
+    if (msLeft <= oneDay) return "bg-orange-100 text-orange-700 border border-orange-300";
+    return "bg-primary/10 text-primary border border-primary/20";
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -162,37 +174,38 @@ export default function DiscountCard({ item }) {
           </svg>
         </button>
 
-        {/* Countdown Timer */}
-        <div className="absolute bottom-3 left-3 right-3 z-10">
-          <div className="bg-black/80 backdrop-blur-sm text-white rounded-lg px-3 py-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-white/80">Expires in</span>
-              <span className="font-mono font-bold text-white">{timeLeft}</span>
-            </div>
-          </div>
-        </div>
+        {/* Removed image overlay for expiry; moved into content area */}
       </div>
 
       {/* Content Section */}
       <div className="p-5 flex-1 flex flex-col">
-        {/* Title and Place */}
-        <div className="mb-3">
-          <button
+        {/* Title, Place, and Expiry badge */}
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <button
             onClick={() => router.push(`/deal/${encodeURIComponent(item.id)}`)}
             className="text-left font-bold text-lg text-foreground group-hover:text-primary transition-colors line-clamp-1"
             aria-label={`View ${item.title}`}
           >
             {item.title}
-          </button>
-          {item.place && (
-            <div className="flex items-center gap-1 mt-1">
-              <svg className="w-3 h-3 text-foreground/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              <p className="text-xs text-foreground/60">{item.place}</p>
+            </button>
+            {item.place && (
+              <div className="flex items-center gap-1 mt-1">
+                <svg className="w-3 h-3 text-foreground/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <p className="text-xs text-foreground/60">{item.place}</p>
+              </div>
+            )}
+          </div>
+          {/* Expiry badge in white space */}
+          <div className="shrink-0">
+            <div className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs ${getExpiryBadgeClasses()}`} aria-live="polite">
+              <span className="opacity-80">Expires</span>
+              <span className="font-mono font-semibold">{timeLeft}</span>
             </div>
-          )}
+          </div>
         </div>
 
         {/* Description */}
