@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import Image from "next/image";
+import Link from "next/link";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -434,12 +435,12 @@ export default function SubmitDealPage() {
                     </button>
                     
                     <div className="flex items-center gap-3">
-                      <a
+                      <Link
                         href="/saved"
                         className="rounded-lg border border-slate-300 text-slate-700 px-6 py-3 font-medium hover:bg-slate-50 transition-all duration-200"
                       >
                         Saved Deals
-                      </a>
+                      </Link>
                       <button
                         type="submit"
                         disabled={submitting}
@@ -480,8 +481,8 @@ export function SuccessModal({ open, onClose, name }) {
         <p className="text-foreground/70 mt-2">Thanks, {name}. Your deal was submitted successfully and is awaiting admin approval.</p>
         <div className="mt-4 flex items-center gap-3">
           <button onClick={onClose} className="rounded-md bg-primary text-white px-4 py-2 text-sm hover:brightness-110">Close</button>
-          <a href="/" className="rounded-md border border-foreground/20 px-4 py-2 text-sm hover:bg-foreground/5">Explore Deals</a>
-          <a href="/saved" className="rounded-md border border-foreground/20 px-4 py-2 text-sm hover:bg-foreground/5">Saved Deals</a>
+          <Link href="/" className="rounded-md border border-foreground/20 px-4 py-2 text-sm hover:bg-foreground/5">Explore Deals</Link>
+          <Link href="/saved" className="rounded-md border border-foreground/20 px-4 py-2 text-sm hover:bg-foreground/5">Saved Deals</Link>
         </div>
       </div>
     </div>

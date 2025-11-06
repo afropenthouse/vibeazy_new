@@ -1,21 +1,18 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import Hero from "@/components/Hero";
 import SearchFilter from "@/components/SearchFilter";
 
 export default function HomePage() {
   const { isAuthenticated, user } = useAuth();
-  const [showWelcome, setShowWelcome] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+  const [welcomeClosed, setWelcomeClosed] = useState(false);
+  const showWelcome = useMemo(() => {
+    if (typeof window === "undefined") return false;
     const params = new URLSearchParams(window.location.search);
-    const shouldShow = params.get("welcome") === "1";
-    if (shouldShow && isAuthenticated) {
-      setShowWelcome(true);
-    }
-  }, [isAuthenticated]);
+    return params.get("welcome") === "1" && isAuthenticated && !welcomeClosed;
+  }, [isAuthenticated, welcomeClosed]);
 
   // On initial load, show the deals section like your screenshot
   useEffect(() => {
@@ -27,7 +24,7 @@ export default function HomePage() {
   }, []);
 
   const closeWelcome = () => {
-    setShowWelcome(false);
+    setWelcomeClosed(true);
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
       url.searchParams.delete("welcome");
@@ -49,7 +46,7 @@ export default function HomePage() {
             <p className="text-foreground/70 mt-2">You’re signed in. Explore today’s deals below.</p>
             <div className="mt-4 flex items-center gap-3">
               <a href="#hot-deals" className="rounded-md bg-primary text-white px-4 py-2 text-sm hover:brightness-110">Browse Deals</a>
-              <a href="/saved" className="rounded-md border border-foreground/20 px-4 py-2 text-sm hover:bg-foreground/5">Saved Deals</a>
+              <Link href="/saved" className="rounded-md border border-foreground/20 px-4 py-2 text-sm hover:bg-foreground/5">Saved Deals</Link>
               <button onClick={closeWelcome} className="rounded-md border border-foreground/20 px-4 py-2 text-sm hover:bg-foreground/5">Close</button>
             </div>
           </div>
