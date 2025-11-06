@@ -528,13 +528,41 @@ export const DEALS_DATA = [
   },
 ];
 
-// Backward alias for internal usage in this component
-const DATA = DEALS_DATA;
-  // Reset visible count directly in change handlers to avoid setState in effects
+// Load dynamic deals from backend (fallback to static DEALS_DATA)
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
+const toNumber = (v) => {
+  if (typeof v === "number") return v;
+  if (typeof v === "string") {
+    const cleaned = v.replace(/[,\s]/g, "");
+    const n = Number(cleaned);
+    return Number.isFinite(n) ? n : undefined;
+  }
+  return undefined;
+};
+
+function mapApiDealToCard(d) {
+  return {
+    id: d.id,
+    category: d.category || "Restaurants",
+    title: d.merchantName || d.title || "Untitled",
+    description: d.description || "",
+    place: d.city || "",
+    image: d.imageUrl || "/placeholder.png",
+    priceOriginal: toNumber(d.oldPrice),
+    priceCurrent: toNumber(d.newPrice),
+    discountPct: toNumber(d.discountPct),
+    expiresAt: d.expiresAt || undefined,
+    url: d.deepLink || undefined,
+  };
+}
+
+// Reset visible count directly in change handlers to avoid setState in effects
 
 export default function SearchFilter() {
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [apiDeals, setApiDeals] = useState([]);
 
   // Read initial filters from URL (?q=...&category=...)
   useEffect(() => {
@@ -555,7 +583,29 @@ export default function SearchFilter() {
   const INITIAL_VISIBLE = 6;
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
 
-  const titleOptions = useMemo(() => Array.from(new Set(DATA.map((d) => d.title))), []);
+  // Fetch public deals feed
+  useEffect(() => {
+    let didCancel = false;
+    async function load() {
+      try {
+        const res = await fetch(`${API_BASE}/admin/public/deals`);
+        const data = await res.json();
+        if (!didCancel && res.ok && Array.isArray(data.deals)) {
+          const mapped = data.deals.map(mapApiDealToCard);
+          setApiDeals(mapped);
+        }
+      } catch (_) {
+        // silently keep fallback
+      }
+    }
+    load();
+    return () => { didCancel = true; };
+  }, []);
+
+  // Use only backend-provided deals; do not fall back to mock data
+  const DATA = apiDeals;
+
+  const titleOptions = useMemo(() => Array.from(new Set(DATA.map((d) => d.title))), [DATA]);
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
@@ -567,7 +617,7 @@ export default function SearchFilter() {
       const matchesCategory = selectedCategory === "All" || d.category === selectedCategory;
       return matchesQuery && matchesCategory;
     });
-  }, [query, selectedCategory]);
+  }, [query, selectedCategory, DATA]);
 
   const filteredCount = filtered.length;
   const displayedCount = Math.min(visibleCount, filteredCount);
@@ -578,7 +628,7 @@ export default function SearchFilter() {
       <p className="text-foreground/70 mt-1">Discover amazing deals from local businesses. Updated in real-time.</p>
       <div className="flex flex-col gap-4 mt-6">
         {/* Sticky search controls bar */}
-        <div id="hot-deals" className="sticky top-20 z-40 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3 bg-background/90 backdrop-blur border-b border-foreground/10">
+        <div className="sticky top-20 z-40 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3 bg-background/90 backdrop-blur border-b border-foreground/10">
           <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
           <input
             type="text"

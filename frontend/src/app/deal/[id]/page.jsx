@@ -1,14 +1,48 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DEALS_DATA } from "@/components/SearchFilter";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
+function mapApiDealToCard(d) {
+  return {
+    id: d.id,
+    category: d.category || "Restaurants",
+    title: d.merchantName || d.title || "Untitled",
+    description: d.description || "",
+    place: d.city || "",
+    image: d.imageUrl || "/placeholder.png",
+    priceOriginal: typeof d.oldPrice === "number" ? d.oldPrice : undefined,
+    priceCurrent: typeof d.newPrice === "number" ? d.newPrice : undefined,
+    expiresAt: d.expiresAt || undefined,
+    url: d.deepLink || undefined,
+  };
+}
 
 export default function DealDetailPage({ params }) {
   const router = useRouter();
   const idNum = Number(params.id);
-  const deal = useMemo(() => DEALS_DATA.find((d) => Number(d.id) === idNum), [idNum]);
+  const fallback = useMemo(() => DEALS_DATA.find((d) => Number(d.id) === idNum), [idNum]);
+  const [deal, setDeal] = useState(fallback || null);
+
+  useEffect(() => {
+    let didCancel = false;
+    async function load() {
+      if (fallback) return; // already have data
+      try {
+        const res = await fetch(`${API_BASE}/admin/public/deals/${encodeURIComponent(idNum)}`);
+        const data = await res.json();
+        if (!didCancel && res.ok && data.deal) {
+          setDeal(mapApiDealToCard(data.deal));
+        }
+      } catch {}
+    }
+    load();
+    return () => { didCancel = true; };
+  }, [idNum, fallback]);
 
   if (!deal) {
     return (

@@ -18,7 +18,7 @@ export default function CategoriesGrid() {
   const onSelect = (key) => {
     const url = new URL(window.location.href);
     url.searchParams.set("category", key);
-    router.push(`${url.pathname}?${url.searchParams.toString()}#hot-deals`);
+    router.push(`${url.pathname}?${url.searchParams.toString()}`);
   };
 
   return (

@@ -41,7 +41,34 @@ export default function DiscountCard({ item }) {
     item.priceOriginal,
     item.priceCurrent
   );
-  const percentOff = getPercentOff(displayOriginal, displayCurrent);
+  const pctFromPrices = getPercentOff(displayOriginal, displayCurrent);
+  const percentOff =
+    typeof item.discountPct === "number" && item.discountPct > 0
+      ? Math.floor(item.discountPct)
+      : pctFromPrices;
+
+  // If backend provides discountPct but one of the prices is missing,
+  // derive the missing value so pricing UI can render consistently.
+  const deriveFromPercent = (orig, curr, pct) => {
+    let o = orig;
+    let c = curr;
+    if (typeof pct === "number" && pct > 0) {
+      const ratio = 1 - pct / 100;
+      if (typeof c === "number" && typeof o !== "number") {
+        o = Math.round(c / ratio);
+      } else if (typeof o === "number" && typeof c !== "number") {
+        c = Math.round(o * ratio);
+      }
+    }
+    const normalized = normalizePrices(o, c);
+    return { original: normalized.original, current: normalized.current };
+  };
+
+  const { original: resolvedOriginal, current: resolvedCurrent } = deriveFromPercent(
+    displayOriginal,
+    displayCurrent,
+    percentOff
+  );
 
   const OFFER_URLS = {
     "Sweet Sensation": "https://sweetsensation.ng",
@@ -221,27 +248,27 @@ export default function DiscountCard({ item }) {
         <p className="text-sm text-foreground/70 mb-4 line-clamp-2 flex-1">{item.description}</p>
 
         {/* Price and Action Section */}
-        {(item.priceCurrent || item.priceOriginal) && (
+        {(typeof resolvedCurrent === "number" || typeof resolvedOriginal === "number") && (
           <div className="mt-auto pt-4 border-t border-foreground/5">
             <div className="flex items-center justify-between">
               {/* Price Display */}
               <div className="flex flex-col">
                 <div className="flex items-baseline gap-2">
-                  {typeof displayCurrent === "number" && (
+                  {typeof resolvedCurrent === "number" && (
                     <span className="text-xl font-bold text-primary price-current">
-                      {formatNaira(displayCurrent)}
+                      {formatNaira(resolvedCurrent)}
                     </span>
                   )}
-                  {typeof displayOriginal === "number" && displayOriginal > displayCurrent && (
+                  {typeof resolvedOriginal === "number" && typeof resolvedCurrent === "number" && resolvedOriginal > resolvedCurrent && (
                     <span className="text-sm text-foreground/40 line-through price-original">
-                      {formatNaira(displayOriginal)}
+                      {formatNaira(resolvedOriginal)}
                     </span>
                   )}
                 </div>
-                {typeof displayOriginal === "number" && displayOriginal > displayCurrent && (
+                {typeof resolvedOriginal === "number" && typeof resolvedCurrent === "number" && resolvedOriginal > resolvedCurrent && (
                   <div className="flex items-center gap-1 mt-1">
                     <span className="text-xs text-green-600 font-medium">
-                      Save {formatNaira(displayOriginal - displayCurrent)}
+                      Save {formatNaira(resolvedOriginal - resolvedCurrent)}
                     </span>
                   </div>
                 )}

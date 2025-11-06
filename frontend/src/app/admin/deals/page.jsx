@@ -1,0 +1,701 @@
+"use client";
+import { useEffect, useState } from "react";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
+export default function AdminDealsPage() {
+  const [token, setToken] = useState("");
+  const [deals, setDeals] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [submissions, setSubmissions] = useState([]);
+  const [submissionsStatus, setSubmissionsStatus] = useState("pending");
+  const [submissionsLoading, setSubmissionsLoading] = useState(false);
+  const [submissionsError, setSubmissionsError] = useState("");
+  const [form, setForm] = useState({
+    title: "",
+    description: "",
+    merchantName: "",
+    city: "",
+    category: "",
+    tags: "",
+    oldPrice: "",
+    newPrice: "",
+    discountPct: "",
+    expiresAt: "",
+    deepLink: "",
+    imageFile: null,
+  });
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState("create");
+  const [editingId, setEditingId] = useState(null);
+  const [currentImageUrl, setCurrentImageUrl] = useState("");
+  // Delete confirmation modal state
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    const t = localStorage.getItem("admin_token");
+    if (!t) {
+      window.location.href = "/admin";
+      return;
+    }
+    setToken(t);
+    fetchDeals(t);
+    fetchCategories(t);
+    fetchSubmissions(t, "pending");
+  }, []);
+
+  async function fetchDeals(t) {
+    const res = await fetch(`${API_BASE}/admin/deals`, {
+      headers: { Authorization: `Bearer ${t}` },
+    });
+    const data = await res.json();
+    if (res.ok) setDeals(data.deals || []);
+  }
+
+  async function fetchCategories(t) {
+    const res = await fetch(`${API_BASE}/admin/categories`, {
+      headers: { Authorization: `Bearer ${t}` },
+    });
+    const data = await res.json();
+    if (res.ok) setCategories(data.categories || []);
+  }
+
+  async function fetchSubmissions(t, status = submissionsStatus) {
+    try {
+      setSubmissionsLoading(true);
+      setSubmissionsError("");
+      const res = await fetch(`${API_BASE}/admin/submissions?status=${encodeURIComponent(status)}` , {
+        headers: { Authorization: `Bearer ${t}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to load submissions");
+      setSubmissions(data.submissions || []);
+    } catch (e) {
+      setSubmissionsError(e.message || "Error loading submissions");
+    } finally {
+      setSubmissionsLoading(false);
+    }
+  }
+
+  async function handleSubmissionAction(id, action) {
+    try {
+      const res = await fetch(`${API_BASE}/admin/submissions/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `Failed to ${action}`);
+      // Remove processed submission from current list
+      setSubmissions((list) => list.filter((s) => s.id !== id));
+      // If a deal was created, append to deals for immediate visibility
+      if (data.deal || data.createdDeal) {
+        const created = data.deal || data.createdDeal;
+        setDeals((d) => [created, ...d]);
+      }
+    } catch (e) {
+      setSubmissionsError(e.message || `Failed to ${action}`);
+    }
+  }
+
+  function handleChange(e) {
+    const { name, value } = e.target;
+    setForm((f) => ({ ...f, [name]: value }));
+  }
+
+  function handleFile(e) {
+    const file = e.target.files?.[0] || null;
+    setForm((f) => ({ ...f, imageFile: file }));
+  }
+
+  async function handleCreate(e) {
+    e.preventDefault();
+    setCreating(true);
+    setError("");
+    try {
+      if (!form.deepLink) throw new Error("Website is required");
+      let imageUrl = currentImageUrl;
+      if (!editingId && !form.imageFile) throw new Error("Select an image");
+      if (form.imageFile) {
+        const fd = new FormData();
+        fd.append("image", form.imageFile);
+        const upRes = await fetch(`${API_BASE}/admin/upload`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: fd,
+        });
+        const up = await upRes.json();
+        if (!upRes.ok) throw new Error(up.error || "Upload failed");
+        imageUrl = up.url;
+      }
+      const payload = {
+        title: form.title,
+        description: form.description,
+        merchantName: form.merchantName,
+        city: form.city,
+        category: form.category || null,
+        tags: form.tags ? form.tags.split(",").map((s) => s.trim()).filter(Boolean) : [],
+        oldPrice: form.oldPrice ? Number(form.oldPrice) : null,
+        newPrice: form.newPrice ? Number(form.newPrice) : null,
+        discountPct: form.discountPct ? Number(form.discountPct) : null,
+        expiresAt: form.expiresAt || null,
+        deepLink: form.deepLink,
+        imageUrl,
+      };
+      let data;
+      if (editingId) {
+        const res = await fetch(`${API_BASE}/admin/deals/${editingId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify(payload),
+        });
+        data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Update failed");
+        setDeals((d) => d.map((x) => (x.id === editingId ? data.deal : x)));
+      } else {
+        const res = await fetch(`${API_BASE}/admin/deals`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify(payload),
+        });
+        data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Create failed");
+        setDeals((d) => [data.deal, ...d]);
+      }
+      setForm({ 
+        title: "", description: "", merchantName: "", city: "", category: "", 
+        tags: "", oldPrice: "", newPrice: "", discountPct: "", expiresAt: "", 
+        deepLink: "", imageFile: null 
+      });
+      setEditingId(null);
+      setCurrentImageUrl("");
+      setActiveTab("browse");
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  function startEdit(deal) {
+    setActiveTab("create");
+    setEditingId(deal.id);
+    setCurrentImageUrl(deal.imageUrl || "");
+    setForm({
+      title: deal.title || "",
+      description: deal.description || "",
+      merchantName: deal.merchantName || "",
+      city: deal.city || "",
+      category: deal.category || "",
+      tags: Array.isArray(deal.tags) ? deal.tags.join(", ") : "",
+      oldPrice: deal.oldPrice ?? "",
+      newPrice: deal.newPrice ?? "",
+      discountPct: deal.discountPct ?? "",
+      expiresAt: deal.expiresAt ? String(deal.expiresAt).substring(0, 10) : "",
+      deepLink: deal.deepLink || "",
+      imageFile: null,
+    });
+  }
+
+  function askDelete(id) {
+    setConfirmDeleteId(id);
+  }
+
+  async function performDelete() {
+    if (!confirmDeleteId) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`${API_BASE}/admin/deals/${confirmDeleteId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setDeals((d) => d.filter((x) => x.id !== confirmDeleteId));
+        setConfirmDeleteId(null);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setError(err.error || "Delete failed");
+      }
+    } catch (e) {
+      setError(e.message || "Delete failed");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
+              Manage Deals
+            </h1>
+            <p className="text-slate-600 mt-2">Create and manage exclusive deals</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <a 
+              href="/admin/dashboard" 
+              className="rounded-lg bg-slate-200 text-slate-700 px-4 py-2 text-sm font-medium hover:bg-slate-300 transition-all duration-200"
+            >
+              ← Dashboard
+            </a>
+            <button 
+              onClick={() => { localStorage.removeItem("admin_token"); window.location.href = "/admin"; }} 
+              className="rounded-lg bg-red-100 text-red-700 px-4 py-2 text-sm font-medium hover:bg-red-200 transition-all duration-200"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="mb-8">
+          <div className="border-b border-slate-200">
+            <nav className="-mb-px flex space-x-8">
+              <button
+                onClick={() => setActiveTab("create")}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "create"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+                }`}
+              >
+                Create New Deal
+              </button>
+              <button
+                onClick={() => setActiveTab("browse")}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "browse"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+                }`}
+              >
+                Browse Deals ({deals.length})
+              </button>
+              <button
+                onClick={() => setActiveTab("submissions")}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "submissions"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+                }`}
+              >
+                User Submissions ({submissions.length})
+              </button>
+            </nav>
+          </div>
+        </div>
+
+        {/* Create Deal Form */}
+        {activeTab === "create" && (
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+            <div className="px-6 py-5 border-b border-slate-200 bg-slate-50/50">
+              <h2 className="text-lg font-semibold text-slate-800">Create New Deal</h2>
+              <p className="text-sm text-slate-600 mt-1">Fill in the details below to create a new deal</p>
+            </div>
+            
+            <form onSubmit={handleCreate} className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Left Column */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Deal Title *</label>
+                    <input
+                      name="title"
+                      value={form.title}
+                      onChange={handleChange}
+                      required
+                      className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                      placeholder="e.g., 50% Off Electronics"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
+                    <textarea
+                      name="description"
+                      value={form.description}
+                      onChange={handleChange}
+                      rows={3}
+                      className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                      placeholder="Describe the deal..."
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Merchant *</label>
+                      <input
+                        name="merchantName"
+                        value={form.merchantName}
+                        onChange={handleChange}
+                        required
+                        className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                        placeholder="Store name"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">City *</label>
+                      <input
+                        name="city"
+                        value={form.city}
+                        onChange={handleChange}
+                        required
+                        className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                        placeholder="City location"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Category</label>
+                      <select
+                        name="category"
+                        value={form.category}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                      >
+                        <option value="">Select category</option>
+                        {(categories.length > 0 ? categories.map((c) => c.name) : [
+                          "Restaurants","Fashion","Electronics","Furniture","Beauty","Travel","Entertainment"
+                        ]).map((name) => (
+                          <option key={name} value={name}>{name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Tags</label>
+                      <input
+                        name="tags"
+                        value={form.tags}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                        placeholder="tech, discount, summer"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column */}
+                <div className="space-y-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Old Price</label>
+                      <input
+                        name="oldPrice"
+                        value={form.oldPrice}
+                        onChange={handleChange}
+                        type="number"
+                        className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                        placeholder="₦0.00"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">New Price</label>
+                      <input
+                        name="newPrice"
+                        value={form.newPrice}
+                        onChange={handleChange}
+                        type="number"
+                        className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                        placeholder="₦0.00"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Discount %</label>
+                      <input
+                        name="discountPct"
+                        value={form.discountPct}
+                        onChange={handleChange}
+                        type="number"
+                        className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                        placeholder="0%"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Expires At</label>
+                    <input
+                      name="expiresAt"
+                      value={form.expiresAt}
+                      onChange={handleChange}
+                      type="date"
+                      className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Website *</label>
+                    <input
+                      name="deepLink"
+                      value={form.deepLink}
+                      onChange={handleChange}
+                      type="url"
+                      required
+                      className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                      placeholder="https://partner-website.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Deal Image *</label>
+                    <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-primary/50 transition-all duration-200">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFile}
+                        className="hidden"
+                        id="image-upload"
+                      />
+                      <label htmlFor="image-upload" className="cursor-pointer">
+                        <div className="flex flex-col items-center">
+                          <span className="text-4xl mb-2">📷</span>
+                          <p className="text-sm text-slate-600">
+                            {form.imageFile ? form.imageFile.name : "Click to upload image"}
+                          </p>
+                          <p className="text-xs text-slate-500 mt-1">PNG, JPG, WEBP up to 10MB</p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {error && (
+                <div className="mt-6 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-red-700 text-sm">
+                  {error}
+                </div>
+              )}
+
+              <div className="mt-6 flex items-center justify-between">
+                {editingId ? (
+                  <button
+                    type="button"
+                    onClick={() => { setEditingId(null); setCurrentImageUrl(""); setForm({ title: "", description: "", merchantName: "", city: "", category: "", tags: "", oldPrice: "", newPrice: "", discountPct: "", expiresAt: "", deepLink: "", imageFile: null }); }}
+                    className="rounded-lg bg-slate-200 text-slate-700 px-4 py-2 font-medium hover:bg-slate-300 transition-all duration-200"
+                  >
+                    Cancel Edit
+                  </button>
+                ) : <span />}
+                <button
+                  type="submit"
+                  disabled={creating}
+                  className="rounded-lg bg-primary text-white px-8 py-3 font-medium hover:brightness-110 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none disabled:hover:shadow-md"
+                >
+                  {creating ? (
+                    <span className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      {editingId ? "Saving Changes..." : "Creating Deal..."}
+                    </span>
+                  ) : (
+                    editingId ? "Save Changes" : "Create Deal"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* Browse Deals */}
+        {activeTab === "browse" && (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-slate-800">All Deals</h2>
+              <p className="text-sm text-slate-600">{deals.length} deals found</p>
+            </div>
+
+            {deals.length === 0 ? (
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center">
+                <span className="text-6xl mb-4 block">🛍️</span>
+                <h3 className="text-lg font-medium text-slate-800 mb-2">No deals yet</h3>
+                <p className="text-slate-600 mb-6">Create your first deal to get started</p>
+                <button
+                  onClick={() => setActiveTab("create")}
+                  className="rounded-lg bg-primary text-white px-6 py-2 font-medium hover:brightness-110 transition-all duration-200"
+                >
+                  Create First Deal
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {deals.map((deal) => (
+                  <div key={deal.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all duration-300 group">
+                    <div className="relative overflow-hidden">
+                      <img 
+                        src={deal.imageUrl} 
+                        alt={deal.title}
+                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      {deal.discountPct && (
+                        <div className="absolute top-3 right-3 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                          {deal.discountPct}% OFF
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="p-5">
+                      <h3 className="font-semibold text-slate-800 line-clamp-2 mb-2 group-hover:text-primary transition-colors">
+                        {deal.title}
+                      </h3>
+                      
+                      <div className="flex items-center text-sm text-slate-600 mb-3">
+                        <span className="mr-3">🏪 {deal.merchantName}</span>
+                        <span>📍 {deal.city}</span>
+                      </div>
+
+                      {deal.description && (
+                        <p className="text-sm text-slate-600 line-clamp-2 mb-4">
+                          {deal.description}
+                        </p>
+                      )}
+
+                      {(deal.newPrice || deal.oldPrice) && (
+                        <div className="flex items-center justify-between mb-3">
+                          {deal.newPrice && (
+                            <span className="text-lg font-bold text-green-600">
+                              ₦{Number(deal.newPrice).toLocaleString()}
+                            </span>
+                          )}
+                          {deal.oldPrice && deal.newPrice && (
+                            <span className="text-sm text-slate-500 line-through">
+                              ₦{Number(deal.oldPrice).toLocaleString()}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {deal.expiresAt && (
+                        <div className="text-xs text-slate-500 border-t border-slate-100 pt-3">
+                          Expires: {new Date(deal.expiresAt).toLocaleDateString()}
+                        </div>
+                      )}
+                      <div className="mt-4 flex items-center gap-2">
+                        <a href={deal.deepLink || "#"} target="_blank" rel="noopener" className="rounded-md bg-slate-100 text-slate-700 px-3 py-1.5 text-xs hover:bg-slate-200">Website</a>
+                        <button onClick={() => startEdit(deal)} className="rounded-md bg-blue-100 text-blue-700 px-3 py-1.5 text-xs hover:bg-blue-200">Edit</button>
+                        <button onClick={() => askDelete(deal.id)} className="rounded-md bg-red-100 text-red-700 px-3 py-1.5 text-xs hover:bg-red-200">Delete</button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* User Submissions */}
+        {activeTab === "submissions" && (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-semibold text-slate-800">User Submissions</h2>
+                <p className="text-sm text-slate-600">Approve or reject community-submitted deals</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <select
+                  value={submissionsStatus}
+                  onChange={(e) => { setSubmissionsStatus(e.target.value); fetchSubmissions(token, e.target.value); }}
+                  className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+                >
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+                <button
+                  onClick={() => fetchSubmissions(token, submissionsStatus)}
+                  className="rounded-md bg-slate-100 text-slate-700 px-3 py-2 text-sm hover:bg-slate-200"
+                >
+                  Refresh
+                </button>
+              </div>
+            </div>
+
+            {submissionsError && (
+              <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-red-700 text-sm">
+                {submissionsError}
+              </div>
+            )}
+
+            {submissionsLoading ? (
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center">
+                <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                <p className="text-slate-600">Loading submissions...</p>
+              </div>
+            ) : submissions.length === 0 ? (
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center">
+                <span className="text-6xl mb-4 block">📨</span>
+                <h3 className="text-lg font-medium text-slate-800 mb-2">No submissions</h3>
+                <p className="text-slate-600">No {submissionsStatus} submissions at the moment.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {submissions.map((s) => (
+                  <div key={s.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all duration-300 group">
+                    <div className="relative overflow-hidden">
+                      {s.imageUrl ? (
+                        <img src={s.imageUrl} alt={s.title || s.merchantName} className="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-300" />
+                      ) : (
+                        <div className="w-full h-44 bg-slate-100 flex items-center justify-center text-2xl">🖼️</div>
+                      )}
+                      <div className="absolute top-3 left-3 bg-white/90 rounded-full px-3 py-1 text-xs border border-slate-200">{s.status || 'pending'}</div>
+                    </div>
+                    <div className="p-5">
+                      <h3 className="font-semibold text-slate-800 line-clamp-2 mb-2">{s.title || 'Untitled Deal'}</h3>
+                      <div className="flex items-center text-sm text-slate-600 mb-3">
+                        <span className="mr-3">🏪 {s.merchantName}</span>
+                        <span>📍 {s.city}</span>
+                      </div>
+                      {s.description && (
+                        <p className="text-sm text-slate-600 line-clamp-2 mb-3">{s.description}</p>
+                      )}
+                      <div className="mt-4 flex items-center gap-2">
+                        {submissionsStatus === 'pending' ? (
+                          <>
+                            <button onClick={() => handleSubmissionAction(s.id, 'approve')} className="rounded-md bg-green-100 text-green-700 px-3 py-1.5 text-xs hover:bg-green-200">Approve</button>
+                            <button onClick={() => handleSubmissionAction(s.id, 'reject')} className="rounded-md bg-red-100 text-red-700 px-3 py-1.5 text-xs hover:bg-red-200">Reject</button>
+                          </>
+                        ) : (
+                          <span className="text-xs text-slate-500">Action not available</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <h2 className="text-xl font-bold">Delete Deal</h2>
+            <p className="text-slate-600 mt-2">Are you sure you want to delete this deal? This action cannot be undone.</p>
+            <div className="mt-4 flex items-center gap-3">
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                className="rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={performDelete}
+                disabled={deleting}
+                className="rounded-md bg-red-600 text-white px-4 py-2 text-sm hover:bg-red-700 disabled:opacity-60"
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

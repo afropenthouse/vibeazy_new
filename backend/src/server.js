@@ -38,9 +38,35 @@ app.get("/health", (req, res) => {
   res.json({ ok: true });
 });
 
+// Seed default categories on startup if none exist
+(async function seedDefaultCategories() {
+  try {
+    const count = await prisma.category.count();
+    if (count === 0) {
+      const DEFAULT_CATEGORIES = [
+        "Restaurants",
+        "Fashion",
+        "Electronics",
+        "Furniture",
+        "Beauty",
+        "Travel",
+        "Entertainment",
+      ];
+      await prisma.category.createMany({
+        data: DEFAULT_CATEGORIES.map((name) => ({ name })),
+        skipDuplicates: true,
+      });
+      console.log("Seeded default categories:", DEFAULT_CATEGORIES);
+    }
+  } catch (e) {
+    console.warn("Category seed failed:", e?.message || e);
+  }
+})();
+
 app.use("/auth", require("./routes/auth"));
 app.use("/password", require("./routes/password"));
 app.use("/deals", require("./routes/deals"));
+app.use("/admin", require("./routes/admin"));
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {

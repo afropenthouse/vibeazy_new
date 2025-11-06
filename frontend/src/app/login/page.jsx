@@ -27,7 +27,7 @@ export default function LoginPage() {
     try {
       await login(email, password);
       // If a `next` query param is present, redirect there after login
-      let nextPath = "/welcome";
+      let nextPath = "/?welcome=1";
       if (typeof window !== "undefined") {
         const params = new URLSearchParams(window.location.search);
         if (params.get("next")) nextPath = params.get("next");

@@ -1,0 +1,241 @@
+const express = require("express");
+const bcrypt = require("bcryptjs");
+const multer = require("multer");
+const adminAuth = require("../middleware/admin");
+const { signToken } = require("../utils/jwt");
+const { configureCloudinary } = require("../utils/cloudinary");
+
+const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+
+// Admin login using single env credentials
+router.post("/login", async (req, res) => {
+  const { email, password } = req.body || {};
+  const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+  if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+    return res.status(500).json({ error: "Admin credentials not configured" });
+  }
+  if (!email || !password) return res.status(400).json({ error: "Missing fields" });
+  const emailOk = email === ADMIN_EMAIL;
+  const passOk = ADMIN_PASSWORD.startsWith("$2a$")
+    ? await bcrypt.compare(password, ADMIN_PASSWORD) // support hashed env password
+    : password === ADMIN_PASSWORD;
+  if (!emailOk || !passOk) return res.status(401).json({ error: "Invalid credentials" });
+  const token = signToken({ role: "ADMIN", email: ADMIN_EMAIL });
+  res.json({ token });
+});
+
+// Upload image to Cloudinary, returns URL
+router.post("/upload", adminAuth, upload.single("image"), async (req, res) => {
+  try {
+    const cloudinary = configureCloudinary();
+    const file = req.file;
+    if (!file) return res.status(400).json({ error: "No image uploaded" });
+    const result = await cloudinary.uploader.upload_stream({ folder: "vibeazy/deals" }, (error, data) => {
+      if (error) {
+        return res.status(500).json({ error: "Cloudinary upload failed" });
+      }
+      res.json({ url: data.secure_url });
+    });
+    // Pipe buffer into upload_stream
+    const stream = result; // returned writable stream
+    stream.end(file.buffer);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Upload error" });
+  }
+});
+
+// Create a deal
+router.post("/deals", adminAuth, async (req, res) => {
+  const prisma = req.prisma;
+  const data = req.body || {};
+  if (!data.title || !data.merchantName || !data.city || !data.imageUrl) {
+    return res.status(400).json({ error: "title, merchantName, city, imageUrl are required" });
+  }
+  try {
+    const deal = await prisma.deal.create({ data: {
+      title: data.title,
+      description: data.description || null,
+      merchantName: data.merchantName,
+      city: data.city,
+      category: data.category || null,
+      tags: Array.isArray(data.tags) ? data.tags : [],
+      imageUrl: data.imageUrl,
+      oldPrice: data.oldPrice ?? null,
+      newPrice: data.newPrice ?? null,
+      discountPct: data.discountPct ?? null,
+      expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
+      isActive: data.isActive !== undefined ? !!data.isActive : true,
+      deepLink: data.deepLink || null,
+    } });
+    res.status(201).json({ deal });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to create deal" });
+  }
+});
+
+// List all deals (admin)
+router.get("/deals", adminAuth, async (req, res) => {
+  const prisma = req.prisma;
+  const deals = await prisma.deal.findMany({ orderBy: { createdAt: "desc" } });
+  res.json({ deals });
+});
+
+// Update deal
+router.patch("/deals/:id", adminAuth, async (req, res) => {
+  const prisma = req.prisma;
+  const id = Number(req.params.id);
+  try {
+    const deal = await prisma.deal.update({ where: { id }, data: req.body });
+    res.json({ deal });
+  } catch (e) {
+    res.status(404).json({ error: "Deal not found" });
+  }
+});
+
+// Delete deal
+router.delete("/deals/:id", adminAuth, async (req, res) => {
+  const prisma = req.prisma;
+  const id = Number(req.params.id);
+  await prisma.deal.delete({ where: { id } });
+  res.json({ ok: true });
+});
+
+// Public deals feed for webapp
+router.get("/public/deals", async (req, res) => {
+  const prisma = req.prisma;
+  const { city, category } = req.query;
+  const where = { isActive: true };
+  if (city) where.city = city;
+  if (category) where.category = category;
+  const deals = await prisma.deal.findMany({ where, orderBy: [{ discountPct: "desc" }, { createdAt: "desc" }] });
+  res.json({ deals });
+});
+
+// Public single deal by id
+router.get("/public/deals/:id", async (req, res) => {
+  const prisma = req.prisma;
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "Invalid id" });
+  const deal = await prisma.deal.findFirst({ where: { id, isActive: true } });
+  if (!deal) return res.status(404).json({ error: "Deal not found" });
+  res.json({ deal });
+});
+
+// Admin: list users
+router.get("/users", adminAuth, async (req, res) => {
+  const prisma = req.prisma;
+  const users = await prisma.user.findMany({
+    select: { id: true, name: true, email: true, emailVerified: true, createdAt: true },
+    orderBy: { createdAt: "desc" },
+  });
+  const counts = {
+    users: await prisma.user.count(),
+    deals: await prisma.deal.count(),
+    savedDeals: await prisma.savedDeal.count(),
+  };
+  res.json({ users, counts });
+});
+
+// Categories management
+router.get("/categories", adminAuth, async (req, res) => {
+  const prisma = req.prisma;
+  const categories = await prisma.category.findMany({ orderBy: { name: "asc" } });
+  res.json({ categories });
+});
+
+router.post("/categories", adminAuth, async (req, res) => {
+  const prisma = req.prisma;
+  const { name } = req.body || {};
+  if (!name || !String(name).trim()) return res.status(400).json({ error: "name required" });
+  try {
+    const cat = await prisma.category.create({ data: { name: String(name).trim() } });
+    res.status(201).json({ category: cat });
+  } catch (e) {
+    if (e && e.code === "P2002") return res.status(409).json({ error: "Category exists" });
+    res.status(500).json({ error: "Failed to create category" });
+  }
+});
+
+router.delete("/categories/:id", adminAuth, async (req, res) => {
+  const prisma = req.prisma;
+  const id = Number(req.params.id);
+  try {
+    await prisma.category.delete({ where: { id } });
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(404).json({ error: "Category not found" });
+  }
+});
+
+// Update category name
+router.patch("/categories/:id", adminAuth, async (req, res) => {
+  const prisma = req.prisma;
+  const id = Number(req.params.id);
+  const { name } = req.body || {};
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "Invalid id" });
+  if (!name || !String(name).trim()) return res.status(400).json({ error: "name required" });
+  try {
+    const category = await prisma.category.update({
+      where: { id },
+      data: { name: String(name).trim() },
+    });
+    res.json({ category });
+  } catch (e) {
+    if (e && e.code === "P2002") return res.status(409).json({ error: "Category exists" });
+    res.status(404).json({ error: "Category not found" });
+  }
+});
+
+// Public categories
+router.get("/public/categories", async (req, res) => {
+  const prisma = req.prisma;
+  const categories = await prisma.category.findMany({ orderBy: { name: "asc" } });
+  res.json({ categories });
+});
+
+// User submissions management (admin)
+router.get("/submissions", adminAuth, async (req, res) => {
+  const prisma = req.prisma;
+  const { status } = req.query;
+  const where = status ? { status } : {};
+  const subs = await prisma.userDealSubmission.findMany({ where, orderBy: { createdAt: "desc" } });
+  res.json({ submissions: subs });
+});
+
+router.patch("/submissions/:id", adminAuth, async (req, res) => {
+  const prisma = req.prisma;
+  const id = Number(req.params.id);
+  const { action } = req.body || {};
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "Invalid id" });
+  if (!action || !["approve", "reject"].includes(action)) return res.status(400).json({ error: "action must be approve or reject" });
+  const sub = await prisma.userDealSubmission.findUnique({ where: { id } });
+  if (!sub) return res.status(404).json({ error: "Submission not found" });
+  if (action === "reject") {
+    const updated = await prisma.userDealSubmission.update({ where: { id }, data: { status: "rejected" } });
+    return res.json({ submission: updated });
+  }
+  // approve: create Deal and mark approved
+  const deal = await prisma.deal.create({ data: {
+    title: sub.title,
+    description: sub.description,
+    merchantName: sub.merchantName,
+    city: sub.city,
+    category: sub.category,
+    tags: sub.tags,
+    imageUrl: sub.imageUrl,
+    oldPrice: sub.oldPrice,
+    newPrice: sub.newPrice,
+    discountPct: sub.discountPct,
+    expiresAt: sub.expiresAt,
+    deepLink: sub.deepLink,
+    isActive: true,
+  } });
+  const updated = await prisma.userDealSubmission.update({ where: { id }, data: { status: "approved", dealId: deal.id } });
+  res.json({ submission: updated, deal });
+});
+
+module.exports = router;

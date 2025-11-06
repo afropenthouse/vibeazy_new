@@ -49,17 +49,17 @@ export default function Header() {
           </form>
           {/* Icons + auth */}
           <div className="flex items-center gap-2 sm:gap-3">
-            <IconButton label="Wishlist">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20.8 11.4 12 20 3.2 11.4a5.6 5.6 0 1 1 7.9-7.9L12 4l.9-.5a5.6 5.6 0 0 1 7.9 7.9Z"/></svg>
-            </IconButton>
-            <IconButton label="Cart">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/><path d="M3 3h2l2 12h11l2-7H6"/></svg>
-            </IconButton>
+            {/* Always keep notifications */}
             <IconButton label="Notifications">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8a6 6 0 1 0-12 0v5H4l2 3h12l2-3h-2V8"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
             </IconButton>
+
             {isAuthenticated ? (
               <div className="flex items-center gap-2">
+                {/* Menu, Create Deal, Saved Deals shown when logged in */}
+                <Link href="/" className="hidden sm:inline-flex items-center rounded-full border border-foreground/20 text-foreground px-3 py-1.5 text-sm hover:bg-foreground/5">Menu</Link>
+                <Link href="/submit" className="inline-flex items-center rounded-full bg-secondary text-white px-3 py-1.5 text-sm hover:brightness-110">Create Deal</Link>
+                <Link href="/saved" className="inline-flex items-center rounded-full border border-foreground/20 text-foreground px-3 py-1.5 text-sm hover:bg-foreground/5">Saved Deals</Link>
                 <span className="hidden sm:inline text-xs sm:text-sm text-foreground/80">Hi, {user?.name || user?.email}</span>
                 <button
                   type="button"
