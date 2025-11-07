@@ -582,7 +582,7 @@ function SuccessModal({ open, onClose, name }) {
             Thanks, <span className="font-semibold text-slate-800">{name}</span>!
           </p>
           <p className="text-slate-500 text-sm mb-6">
-            Your deal is now awaiting admin approval. We'll notify you once it's live!
+            Your deal is now awaiting admin approval. We&apos;ll notify you once it&apos;s live!
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
