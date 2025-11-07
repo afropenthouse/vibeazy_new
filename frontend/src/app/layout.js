@@ -1,10 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/Header";
-import AnnouncementBar from "@/components/AnnouncementBar";
-import CategoriesNav from "@/components/CategoriesNav";
-import Footer from "@/components/Footer";
-import ScrollButtons from "@/components/ScrollButtons";
+import SiteChrome from "@/components/SiteChrome";
 import { SavedDealsProvider } from "@/contexts/SavedDealsContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 
@@ -29,12 +25,7 @@ export default function RootLayout({ children }) {
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}>
         <AuthProvider>
           <SavedDealsProvider>
-            <AnnouncementBar />
-            <Header />
-            <CategoriesNav />
-            {children}
-            <Footer />
-            <ScrollButtons />
+            <SiteChrome>{children}</SiteChrome>
           </SavedDealsProvider>
         </AuthProvider>
       </body>

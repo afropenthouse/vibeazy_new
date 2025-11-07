@@ -12,12 +12,10 @@ export default function AdminDealsPage() {
   const [submissionsLoading, setSubmissionsLoading] = useState(false);
   const [submissionsError, setSubmissionsError] = useState("");
   const [form, setForm] = useState({
-    title: "",
     description: "",
     merchantName: "",
     city: "",
     category: "",
-    tags: "",
     oldPrice: "",
     newPrice: "",
     discountPct: "",
@@ -102,7 +100,19 @@ export default function AdminDealsPage() {
 
   function handleChange(e) {
     const { name, value } = e.target;
-    setForm((f) => ({ ...f, [name]: value }));
+    setForm((f) => {
+      const next = { ...f, [name]: value };
+      if (name === "oldPrice" || name === "newPrice") {
+        const oldP = next.oldPrice ? Number(next.oldPrice) : undefined;
+        const newP = next.newPrice ? Number(next.newPrice) : undefined;
+        let discount = "";
+        if (oldP && newP && oldP > 0 && newP >= 0 && newP <= oldP) {
+          discount = String(Math.round(((oldP - newP) / oldP) * 100));
+        }
+        next.discountPct = discount;
+      }
+      return next;
+    });
   }
 
   function handleFile(e) {
@@ -130,16 +140,20 @@ export default function AdminDealsPage() {
         if (!upRes.ok) throw new Error(up.error || "Upload failed");
         imageUrl = up.url;
       }
+      // Auto-calculate discount percentage from prices
+      const oldP = form.oldPrice ? Number(form.oldPrice) : null;
+      const newP = form.newPrice ? Number(form.newPrice) : null;
+      const autoDiscount = (oldP && newP && oldP > 0 && newP >= 0 && newP <= oldP)
+        ? Math.round(((oldP - newP) / oldP) * 100)
+        : null;
       const payload = {
-        title: form.title,
         description: form.description,
         merchantName: form.merchantName,
         city: form.city,
         category: form.category || null,
-        tags: form.tags ? form.tags.split(",").map((s) => s.trim()).filter(Boolean) : [],
-        oldPrice: form.oldPrice ? Number(form.oldPrice) : null,
-        newPrice: form.newPrice ? Number(form.newPrice) : null,
-        discountPct: form.discountPct ? Number(form.discountPct) : null,
+        oldPrice: oldP,
+        newPrice: newP,
+        discountPct: autoDiscount,
         expiresAt: form.expiresAt || null,
         deepLink: form.deepLink,
         imageUrl,
@@ -165,8 +179,8 @@ export default function AdminDealsPage() {
         setDeals((d) => [data.deal, ...d]);
       }
       setForm({ 
-        title: "", description: "", merchantName: "", city: "", category: "", 
-        tags: "", oldPrice: "", newPrice: "", discountPct: "", expiresAt: "", 
+        description: "", merchantName: "", city: "", category: "", 
+        oldPrice: "", newPrice: "", discountPct: "", expiresAt: "", 
         deepLink: "", imageFile: null 
       });
       setEditingId(null);
@@ -184,12 +198,10 @@ export default function AdminDealsPage() {
     setEditingId(deal.id);
     setCurrentImageUrl(deal.imageUrl || "");
     setForm({
-      title: deal.title || "",
       description: deal.description || "",
       merchantName: deal.merchantName || "",
       city: deal.city || "",
       category: deal.category || "",
-      tags: Array.isArray(deal.tags) ? deal.tags.join(", ") : "",
       oldPrice: deal.oldPrice ?? "",
       newPrice: deal.newPrice ?? "",
       discountPct: deal.discountPct ?? "",
@@ -302,17 +314,7 @@ export default function AdminDealsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Left Column */}
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Deal Title *</label>
-                    <input
-                      name="title"
-                      value={form.title}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
-                      placeholder="e.g., 50% Off Electronics"
-                    />
-                  </div>
+                  {/* Title removed (not displayed in UI) */}
 
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
@@ -368,16 +370,7 @@ export default function AdminDealsPage() {
                         ))}
                       </select>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Tags</label>
-                      <input
-                        name="tags"
-                        value={form.tags}
-                        onChange={handleChange}
-                        className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
-                        placeholder="tech, discount, summer"
-                      />
-                    </div>
+                    {/* Tags removed (not displayed in UI) */}
                   </div>
                 </div>
 
@@ -411,7 +404,7 @@ export default function AdminDealsPage() {
                       <input
                         name="discountPct"
                         value={form.discountPct}
-                        onChange={handleChange}
+                        readOnly
                         type="number"
                         className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
                         placeholder="0%"

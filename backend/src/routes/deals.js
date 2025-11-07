@@ -69,14 +69,28 @@ router.delete("/unsave/:dealId", auth, async (req, res) => {
 router.post("/submit", auth, async (req, res) => {
   const prisma = req.prisma;
   const data = req.body || {};
-  if (!data.title || !data.merchantName || !data.city || !data.imageUrl) {
-    return res.status(400).json({ error: "title, merchantName, city, imageUrl are required" });
+  if (!data.merchantName || !data.city || !data.imageUrl) {
+    return res.status(400).json({ error: "merchantName, city, imageUrl are required" });
   }
   try {
+    // Ensure we always have a non-empty title (Prisma schema requires it)
+    const titleCandidate = String((data.title ?? data.description ?? data.merchantName) || "").trim();
+    if (!titleCandidate) {
+      return res.status(400).json({ error: "title or description required" });
+    }
+    // Auto-calculate discountPct server-side if not provided
+    let discountPct = data.discountPct ?? null;
+    if ((data.oldPrice ?? null) !== null && (data.newPrice ?? null) !== null) {
+      const oldP = Number(data.oldPrice);
+      const newP = Number(data.newPrice);
+      if (Number.isFinite(oldP) && Number.isFinite(newP) && oldP > 0 && newP >= 0 && newP <= oldP) {
+        discountPct = Math.round(((oldP - newP) / oldP) * 100);
+      }
+    }
     const sub = await prisma.userDealSubmission.create({
       data: {
+        title: titleCandidate,
         userId: req.user.id,
-        title: data.title,
         description: data.description || null,
         merchantName: data.merchantName,
         city: data.city,
@@ -85,7 +99,7 @@ router.post("/submit", auth, async (req, res) => {
         imageUrl: data.imageUrl,
         oldPrice: data.oldPrice ?? null,
         newPrice: data.newPrice ?? null,
-        discountPct: data.discountPct ?? null,
+        discountPct,
         expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
         deepLink: data.deepLink || null,
         status: "pending",
@@ -106,6 +120,56 @@ router.get("/my-submissions", auth, async (req, res) => {
     orderBy: { createdAt: "desc" },
   });
   res.json({ items });
+});
+
+// Update my submission (user-owned, only if not approved)
+router.patch("/my-submissions/:id", auth, async (req, res) => {
+  const prisma = req.prisma;
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "Invalid id" });
+  try {
+    const existing = await prisma.userDealSubmission.findUnique({ where: { id } });
+    if (!existing || existing.userId !== req.user.id) {
+      return res.status(404).json({ error: "Submission not found" });
+    }
+    if (existing.status === "approved") {
+      return res.status(400).json({ error: "Approved submissions cannot be edited" });
+    }
+
+    const data = req.body || {};
+    // Recalculate discountPct if price fields provided
+    let discountPct = data.discountPct ?? existing.discountPct ?? null;
+    if ((data.oldPrice ?? null) !== null && (data.newPrice ?? null) !== null) {
+      const oldP = Number(data.oldPrice);
+      const newP = Number(data.newPrice);
+      if (Number.isFinite(oldP) && Number.isFinite(newP) && oldP > 0 && newP >= 0 && newP <= oldP) {
+        discountPct = Math.round(((oldP - newP) / oldP) * 100);
+      }
+    }
+
+    const updated = await prisma.userDealSubmission.update({
+      where: { id },
+      data: {
+        description: data.description ?? existing.description,
+        merchantName: data.merchantName ?? existing.merchantName,
+        city: data.city ?? existing.city,
+        category: data.category ?? existing.category,
+        tags: Array.isArray(data.tags) ? data.tags : existing.tags,
+        imageUrl: data.imageUrl ?? existing.imageUrl,
+        oldPrice: data.oldPrice ?? existing.oldPrice,
+        newPrice: data.newPrice ?? existing.newPrice,
+        discountPct,
+        expiresAt: data.expiresAt ? new Date(data.expiresAt) : existing.expiresAt,
+        deepLink: data.deepLink ?? existing.deepLink,
+        // If previously rejected, editing moves it back to pending for re-review
+        status: existing.status === "rejected" ? "pending" : existing.status,
+      },
+    });
+    res.json({ submission: updated });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to update submission" });
+  }
 });
 
 module.exports = router;

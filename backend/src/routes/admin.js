@@ -51,12 +51,26 @@ router.post("/upload", adminAuth, upload.single("image"), async (req, res) => {
 router.post("/deals", adminAuth, async (req, res) => {
   const prisma = req.prisma;
   const data = req.body || {};
-  if (!data.title || !data.merchantName || !data.city || !data.imageUrl) {
-    return res.status(400).json({ error: "title, merchantName, city, imageUrl are required" });
+  if (!data.merchantName || !data.city || !data.imageUrl) {
+    return res.status(400).json({ error: "merchantName, city, imageUrl are required" });
   }
   try {
+    // Ensure non-empty title for Deal model (required by schema)
+    const titleCandidate = String((data.title ?? data.description ?? data.merchantName) || "").trim();
+    if (!titleCandidate) {
+      return res.status(400).json({ error: "title or description required" });
+    }
+    // Auto-calculate discountPct server-side if not provided
+    let discountPct = data.discountPct ?? null;
+    if ((data.oldPrice ?? null) !== null && (data.newPrice ?? null) !== null) {
+      const oldP = Number(data.oldPrice);
+      const newP = Number(data.newPrice);
+      if (Number.isFinite(oldP) && Number.isFinite(newP) && oldP > 0 && newP >= 0 && newP <= oldP) {
+        discountPct = Math.round(((oldP - newP) / oldP) * 100);
+      }
+    }
     const deal = await prisma.deal.create({ data: {
-      title: data.title,
+      title: titleCandidate,
       description: data.description || null,
       merchantName: data.merchantName,
       city: data.city,
@@ -65,7 +79,7 @@ router.post("/deals", adminAuth, async (req, res) => {
       imageUrl: data.imageUrl,
       oldPrice: data.oldPrice ?? null,
       newPrice: data.newPrice ?? null,
-      discountPct: data.discountPct ?? null,
+      discountPct,
       expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
       isActive: data.isActive !== undefined ? !!data.isActive : true,
       deepLink: data.deepLink || null,

@@ -2,16 +2,17 @@
 import { useMemo, useState, useEffect } from "react";
 import DiscountCard from "@/components/DiscountCard";
 
-// NOTE: allowed categories (expanded for UI; filtering shows those present)
+// NOTE: allowed categories (value = internal category, label = visible text)
+// Keep the label text in sync with `CategoriesNav` so header and filters align.
 const CATEGORY_OPTIONS = [
-  "All",
-  "Restaurants",
-  "Fashion",
-  "Electronics",
-  "Furniture",
-  "Beauty",
-  "Travel",
-  "Entertainment",
+  { value: "All", label: "All" },
+  { value: "Restaurants", label: "Food & Restaurants" },
+  { value: "Fashion", label: "Fashion & Clothing" },
+  { value: "Electronics", label: "Gadgets & Electronics" },
+  { value: "Furniture", label: "Furniture & Home" },
+  { value: "Beauty", label: "Beauty & Spa" },
+  { value: "Travel", label: "Travel & Hotels" },
+  { value: "Entertainment", label: "Entertainment & Events" },
 ];
 
 export const DEALS_DATA = [
@@ -562,17 +563,30 @@ function mapApiDealToCard(d) {
 export default function SearchFilter() {
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedCity, setSelectedCity] = useState("Lagos");
   const [apiDeals, setApiDeals] = useState([]);
 
-  // Read initial filters from URL (?q=...&category=...)
+  // Read initial filters from URL (?q=...&category=...&city=...)
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
-      const q = params.get("q") || "";
+      // Read search terms from header which uses `search` param; fall back to `q`
+      const q = params.get("search") || params.get("q") || "";
       const cat = params.get("category") || "All";
+      const city = params.get("city") || "Lagos";
       const rafId = window.requestAnimationFrame(() => {
         if (q) setQuery(q);
-        if (cat && CATEGORY_OPTIONS.includes(cat)) setSelectedCategory(cat);
+        // Accept either the option value (e.g. "Restaurants") or the visible label
+        // (e.g. "Food & Restaurants") in the URL. Map labels to values so filtering
+        // works regardless of which form was used to generate the link.
+        if (cat) {
+          const byValue = CATEGORY_OPTIONS.find((c) => c.value === cat);
+          const byLabel = CATEGORY_OPTIONS.find((c) => c.label === cat);
+          if (byValue) setSelectedCategory(byValue.value);
+          else if (byLabel) setSelectedCategory(byLabel.value);
+          else setSelectedCategory(cat);
+        }
+        if (city) setSelectedCity(city);
       });
       return () => {
         window.cancelAnimationFrame(rafId);
@@ -605,7 +619,6 @@ export default function SearchFilter() {
   // Use only backend-provided deals; do not fall back to mock data
   const DATA = apiDeals;
 
-  const titleOptions = useMemo(() => Array.from(new Set(DATA.map((d) => d.title))), [DATA]);
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
@@ -614,10 +627,25 @@ export default function SearchFilter() {
         d.title.toLowerCase().includes(q) ||
         d.description.toLowerCase().includes(q) ||
         (d.place?.toLowerCase().includes(q));
-      const matchesCategory = selectedCategory === "All" || d.category === selectedCategory;
-      return matchesQuery && matchesCategory;
+      const matchesCity = selectedCity ? (d.place?.toLowerCase() === selectedCity.toLowerCase()) : true;
+      // Normalize both the deal.category and the selectedCategory to the canonical
+      // option.value when possible. This handles cases where categories were saved
+      // with a long display name ("Food & Restaurants") but our select uses
+      // shorter internal values ("Restaurants").
+      const getValueFor = (name) => {
+        if (!name) return name;
+        const exactValue = CATEGORY_OPTIONS.find((c) => c.value === name);
+        if (exactValue) return exactValue.value;
+        const byLabel = CATEGORY_OPTIONS.find((c) => c.label === name);
+        if (byLabel) return byLabel.value;
+        return name;
+      };
+      const dealCatValue = getValueFor(d.category);
+      const selCatValue = getValueFor(selectedCategory);
+      const matchesCategory = selCatValue === "All" || dealCatValue === selCatValue;
+      return matchesQuery && matchesCategory && matchesCity;
     });
-  }, [query, selectedCategory, DATA]);
+  }, [query, selectedCategory, selectedCity, DATA]);
 
   const filteredCount = filtered.length;
   const displayedCount = Math.min(visibleCount, filteredCount);
@@ -627,44 +655,7 @@ export default function SearchFilter() {
       <h2 className="text-2xl font-bold">Hot Deals Near You</h2>
       <p className="text-foreground/70 mt-1">Discover amazing deals from local businesses. Updated in real-time.</p>
       <div className="flex flex-col gap-4 mt-6">
-        {/* Sticky search controls bar */}
-        <div className="sticky top-20 z-40 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3 bg-background/90 backdrop-blur border-b border-foreground/10">
-          <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-          <input
-            type="text"
-            list="deal-titles"
-            placeholder="Search deals"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setVisibleCount(INITIAL_VISIBLE);
-            }}
-            className="w-full sm:w-[60%] lg:w-[55%] rounded-md border border-foreground/10 bg-background px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30"
-          />
-          <datalist id="deal-titles">
-            {titleOptions.map((t) => (
-              <option key={t} value={t} />
-            ))}
-          </datalist>
-          <div className="flex items-center gap-2 sm:flex-1 sm:justify-end flex-wrap">
-            <select
-              value={selectedCategory}
-              onChange={(e) => {
-                setSelectedCategory(e.target.value);
-                setVisibleCount(INITIAL_VISIBLE);
-              }}
-              className="rounded-md border border-foreground/10 bg-background px-3 py-1.5 text-sm"
-              aria-label="Filter by category"
-            >
-              {CATEGORY_OPTIONS.map((opt) => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
-          </div>
-          </div>
-        </div>
-
-        {/* Results count placed right after search controls */}
+        {/* Results count */}
         <div className="text-sm text-foreground/70 mt-3">
           {filteredCount > 0 ? (
             <span>Displaying {displayedCount} of {filteredCount} deals</span>
@@ -697,16 +688,19 @@ export default function SearchFilter() {
           </>
         ) : (
           <div className="py-12 flex flex-col items-center justify-center col-span-full">
-            {/* Show a category-specific empty state message. Default to a generic message when needed. */}
-            <p className="text-sm text-foreground/70">
-              {(() => {
-                if (selectedCategory === "Hotels") return "No Hotels yet.";
-                if (selectedCategory === "Restaurants") return "No restaurants yet.";
-                if (selectedCategory === "All") return "No results yet.";
-                return `No ${selectedCategory} yet.`;
-              })()}
-            </p>
-          </div>
+              {/* Show a category-specific empty state message. Use the human-friendly label
+                  (from CATEGORY_OPTIONS) when available so long labels like "Food & Restaurants"
+                  are shown instead of the internal short value. */}
+              <p className="text-sm text-foreground/70">
+                {(() => {
+                  if (selectedCategory === "All") return "No results yet.";
+                  // Prefer the visible label for the selected category when present
+                  const opt = CATEGORY_OPTIONS.find((c) => c.value === selectedCategory) || CATEGORY_OPTIONS.find((c) => c.label === selectedCategory);
+                  const label = opt ? opt.label : selectedCategory;
+                  return `No ${label} yet.`;
+                })()}
+              </p>
+            </div>
         )}
       </div>
     </section>

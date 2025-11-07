@@ -25,7 +25,7 @@ export default function Footer() {
               </svg>
               <span>support@vibeazy.com</span>
             </a>
-            <a href="tel:+2348056679806" className="text-sm text-foreground/80 hover:text-primary transition-colors" aria-label="Call support">+234 805 667 9806</a>
+            <a href="tel:+2348179437874" className="text-sm text-foreground/80 hover:text-primary transition-colors" aria-label="Call support">+234 817 9437 874</a>
           </div>
         </nav>
       </div>
