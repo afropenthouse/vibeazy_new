@@ -18,7 +18,7 @@ const ALLOWED_ORIGINS = Array.from(new Set(
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean)
-    .concat(["https://www.vibeazy.com"])
+    .concat(["https://www.vibeazy.com", "https://vibeazy.com"])
 ));
 console.log("CORS allowed origins:", ALLOWED_ORIGINS);
 
