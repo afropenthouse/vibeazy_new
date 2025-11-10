@@ -11,19 +11,38 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 // Admin login using single env credentials
 router.post("/login", async (req, res) => {
   const { email, password } = req.body || {};
-  const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
-  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
-  if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
-    return res.status(500).json({ error: "Admin credentials not configured" });
-  }
+  const prisma = req.prisma;
   if (!email || !password) return res.status(400).json({ error: "Missing fields" });
-  const emailOk = email === ADMIN_EMAIL;
-  const passOk = ADMIN_PASSWORD.startsWith("$2a$")
-    ? await bcrypt.compare(password, ADMIN_PASSWORD) // support hashed env password
-    : password === ADMIN_PASSWORD;
-  if (!emailOk || !passOk) return res.status(401).json({ error: "Invalid credentials" });
-  const token = signToken({ role: "ADMIN", email: ADMIN_EMAIL });
-  res.json({ token });
+
+  try {
+    // Prefer DB-backed admin if present
+    if (prisma && prisma.admin) {
+      const admin = await prisma.admin.findUnique({ where: { email } });
+      if (admin) {
+        const passOk = await bcrypt.compare(password, admin.passwordHash);
+        if (!passOk) return res.status(401).json({ error: "Invalid credentials" });
+        const token = signToken({ role: admin.role || "ADMIN", email: admin.email });
+        return res.json({ token });
+      }
+    }
+
+    // Fallback to env-based admin (legacy behavior)
+    const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+    if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+      return res.status(500).json({ error: "Admin credentials not configured" });
+    }
+    const emailOk = email === ADMIN_EMAIL;
+    const passOk = ADMIN_PASSWORD.startsWith("$2a$")
+      ? await bcrypt.compare(password, ADMIN_PASSWORD) // support hashed env password
+      : password === ADMIN_PASSWORD;
+    if (!emailOk || !passOk) return res.status(401).json({ error: "Invalid credentials" });
+    const token = signToken({ role: "ADMIN", email: ADMIN_EMAIL });
+    res.json({ token });
+  } catch (e) {
+    console.error('Admin login error', e);
+    res.status(500).json({ error: 'Login error' });
+  }
 });
 
 // Upload image to Cloudinary, returns URL
