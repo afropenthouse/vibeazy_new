@@ -10,8 +10,16 @@ const prisma = new PrismaClient();
 
 // Support a comma-separated list of allowed frontend origins via FRONTEND_URLS
 // Fallback to FRONTEND_URL or http://localhost:3000 for local dev
+// Always explicitly include the production origin used by the site so deployed
+// requests from https://www.vibeazy.com are accepted.
 const frontendUrlsRaw = process.env.FRONTEND_URLS || process.env.FRONTEND_URL || "http://localhost:3000";
-const ALLOWED_ORIGINS = frontendUrlsRaw.split(",").map((s) => s.trim()).filter(Boolean);
+const ALLOWED_ORIGINS = Array.from(new Set(
+  frontendUrlsRaw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .concat(["https://www.vibeazy.com"])
+));
 console.log("CORS allowed origins:", ALLOWED_ORIGINS);
 
 app.use(
