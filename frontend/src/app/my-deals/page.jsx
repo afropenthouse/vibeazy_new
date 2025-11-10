@@ -200,38 +200,92 @@ export default function MyDealsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {items.map((it) => (
-              <div key={it.id} className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/60 overflow-hidden">
-                <div className="relative h-40">
-                  <Image src={it.imageUrl} alt={it.title || it.description || "Deal"} fill className="object-cover" />
-                </div>
-                <div className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm px-2 py-1 rounded-md bg-slate-100 text-slate-700">
-                      {it.status}
-                    </span>
+            {items.map((it) => {
+              const status = String(it.status || "").toLowerCase();
+              let statusClasses = "text-sm px-2 py-1 rounded-md bg-slate-100 text-slate-700";
+              let statusLabel = it.status || "";
+              if (status === "approved") {
+                statusClasses = "text-sm px-2 py-1 rounded-md bg-green-100 text-green-800 font-semibold";
+                statusLabel = "Approved";
+              } else if (status === "pending") {
+                statusClasses = "text-sm px-2 py-1 rounded-md bg-amber-100 text-amber-800 font-semibold";
+                statusLabel = "Pending";
+              } else {
+                // Capitalize first letter for any other status
+                statusLabel = statusLabel ? statusLabel.charAt(0).toUpperCase() + statusLabel.slice(1) : "";
+              }
+
+              const oldP = it.oldPrice ? Number(it.oldPrice) : null;
+              const newP = it.newPrice ? Number(it.newPrice) : null;
+              const saved = oldP && newP && oldP > newP ? oldP - newP : null;
+
+              return (
+                <div key={it.id} className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/60 overflow-hidden">
+                  <div className="relative h-44 sm:h-48 bg-gray-100">
+                    <Image src={it.imageUrl} alt={it.title || it.description || "Deal"} fill className="object-cover" />
+
                     {typeof it.discountPct === "number" && (
-                      <span className="text-sm font-semibold text-rose-700">{it.discountPct}% OFF</span>
+                      <div className="absolute top-3 left-3 bg-rose-600 text-white px-3 py-1 rounded-md text-xs font-bold shadow">
+                        {it.discountPct}% OFF
+                      </div>
                     )}
-                  </div>
-                  <p className="text-slate-800 font-semibold truncate">{it.merchantName} • {it.city}</p>
-                  <p className="text-slate-600 text-sm truncate mt-1">{it.description || "No description"}</p>
-                  <div className="flex items-center justify-between mt-4">
-                    <div className="text-sm text-slate-700">
-                      <span className="line-through mr-2">{it.oldPrice ? `₦${it.oldPrice}` : ""}</span>
-                      <span className="font-bold">{it.newPrice ? `₦${it.newPrice}` : ""}</span>
+
+                    <div className="absolute top-3 right-3">
+                      <button title="Saved" className="w-8 h-8 bg-white/90 rounded-full flex items-center justify-center shadow">
+                        <span aria-hidden>🔖</span>
+                      </button>
                     </div>
-                    <button
-                      className="rounded-lg bg-[#6d0e2b] text-white px-4 py-2 text-sm hover:bg-[#5a0b23] disabled:opacity-50"
-                      onClick={() => beginEdit(it)}
-                      disabled={it.status === "approved"}
-                    >
-                      {it.status === "approved" ? "Approved" : "Edit"}
-                    </button>
+                  </div>
+
+                  <div className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="min-w-0">
+                        <p className="text-lg font-semibold text-slate-800 truncate">{it.merchantName}</p>
+                        <p className="text-sm text-slate-500 mt-1 flex items-center gap-2">
+                          <svg className="w-3 h-3 text-foreground/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          <span className="truncate">{it.city}</span>
+                        </p>
+                      </div>
+
+                      <div>
+                        <span className={statusClasses}>{statusLabel}</span>
+                      </div>
+                    </div>
+
+                    <p className="text-slate-600 text-sm mt-2 line-clamp-2">{it.description || "No description"}</p>
+
+                    <div className="mt-4 pt-4 flex items-center justify-between">
+                      <div>
+                        <div className="text-sm text-slate-700">
+                          {oldP ? (
+                            <span className="line-through mr-2 text-slate-400">₦{oldP.toLocaleString()}</span>
+                          ) : null}
+                          {newP ? (
+                            <span className="font-bold text-slate-900">₦{newP.toLocaleString()}</span>
+                          ) : null}
+                        </div>
+                        {saved ? (
+                          <div className="text-sm text-green-600 mt-1">Save ₦{saved.toLocaleString()}</div>
+                        ) : null}
+                      </div>
+
+                      <div>
+                        <button
+                          className="rounded-lg bg-[#6d0e2b] text-white px-4 py-2 text-sm hover:bg-[#5a0b23] disabled:opacity-50"
+                          onClick={() => beginEdit(it)}
+                          disabled={status === "approved"}
+                        >
+                          {status === "approved" ? "Approved" : "Edit"}
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

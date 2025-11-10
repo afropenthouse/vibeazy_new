@@ -553,8 +553,11 @@ function mapApiDealToCard(d) {
     priceOriginal: toNumber(d.oldPrice),
     priceCurrent: toNumber(d.newPrice),
     discountPct: toNumber(d.discountPct),
-    expiresAt: d.expiresAt || undefined,
-    url: d.deepLink || undefined,
+    expiresAt: d.expiresAt || d.expires_at || undefined,
+    url: d.deepLink || d.deep_link || undefined,
+    // include status metadata if available so the UI can sort/label items
+    status: d.status || d.state || d.reviewStatus || undefined,
+    approvedAt: d.approvedAt || d.approved_at || d.updatedAt || d.updated_at || d.createdAt || d.created_at || undefined,
   };
 }
 
@@ -646,6 +649,35 @@ export default function SearchFilter() {
       return matchesQuery && matchesCategory && matchesCity;
     });
   }, [query, selectedCategory, selectedCity, DATA]);
+
+  // Sort filtered results so that approved deals come first. Within the same
+  // status, use FIFO ordering (oldest first) based on approvedAt/updatedAt/createdAt.
+  const sortedFiltered = useMemo(() => {
+    const arr = filtered.slice();
+    const priority = (s) => {
+      if (!s) return 2;
+      const low = String(s).toLowerCase();
+      if (low === "approved") return 0;
+      if (low === "pending") return 1;
+      return 2;
+    };
+    const timeOf = (it) => {
+      const cand = it?.approvedAt ?? it?.updatedAt ?? it?.createdAt ?? null;
+      if (!cand) return 0;
+      const n = Date.parse(cand);
+      return Number.isNaN(n) ? 0 : n;
+    };
+    arr.sort((a, b) => {
+      const pa = priority(a.status);
+      const pb = priority(b.status);
+      if (pa !== pb) return pa - pb; // approved first
+      // FIFO: older timestamps first
+      const ta = timeOf(a);
+      const tb = timeOf(b);
+      return ta - tb;
+    });
+    return arr;
+  }, [filtered]);
 
   const filteredCount = filtered.length;
   const displayedCount = Math.min(visibleCount, filteredCount);
