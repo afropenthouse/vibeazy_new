@@ -648,6 +648,7 @@ export default function AdminDealsPage() {
                   placeholder={`CSV example (with header):\nmerchantName,city,imageUrl,description,category,oldPrice,newPrice,expiresAt,deepLink\nShop A,Lagos,https://res.cloudinary.com/.../a.jpg,Nice burger,Restaurants,5000,3500,2025-12-31,https://shop-a.com\n\nJSON example:\n[\n  {"merchantName":"Shop A","city":"Lagos","imageUrl":"https://res.cloudinary.com/.../a.jpg","category":"Restaurants","oldPrice":5000,"newPrice":3500,"expiresAt":"2025-12-31","deepLink":"https://shop-a.com"}\n]`}
                 />
                 <p className="text-xs text-slate-500 mt-2">Preview: {bulkPreviewCount} items detected</p>
+                <p className="text-xs text-slate-500">API: {API_BASE}</p>
               </div>
 
               {bulkError && (
@@ -724,7 +725,14 @@ export default function AdminDealsPage() {
                       setBulkText("");
                       setBulkPreviewCount(0);
                     } catch (e) {
-                      setBulkError(e.message || "Bulk upload failed");
+                      const msg = String(e?.message || "Bulk upload failed");
+                      // If we got an HTML error page, it's likely hitting the Next.js site instead of the Express API
+                      const looksHtml = /<!DOCTYPE html>/i.test(msg) || /<html/i.test(msg) || /Cannot POST \/admin\//i.test(msg);
+                      if (looksHtml) {
+                        setBulkError(`Received HTML error from ${API_BASE}. This usually means NEXT_PUBLIC_API_URL points to the frontend site instead of the backend (Express). Set NEXT_PUBLIC_API_URL to your API origin, e.g., http://localhost:4000 or https://api.yourdomain.com.`);
+                      } else {
+                        setBulkError(msg);
+                      }
                     } finally {
                       setBulkSubmitting(false);
                     }
