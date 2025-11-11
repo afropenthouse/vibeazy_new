@@ -32,6 +32,9 @@ export default function AdminDealsPage() {
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
   const [bulkError, setBulkError] = useState("");
   const [bulkSuccess, setBulkSuccess] = useState("");
+  const [bulkUploading, setBulkUploading] = useState(false);
+  const [bulkUploadResults, setBulkUploadResults] = useState([]);
+  const [bulkUploadError, setBulkUploadError] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [currentImageUrl, setCurrentImageUrl] = useState("");
   // Delete confirmation modal state
@@ -240,6 +243,52 @@ export default function AdminDealsPage() {
       setError(e.message || "Delete failed");
     } finally {
       setDeleting(false);
+    }
+  }
+
+  // Bulk image helper: upload local files to get URLs
+  async function handleBulkFileSelect(e) {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setBulkUploadError("");
+    setBulkUploading(true);
+    setBulkUploadResults([]);
+    try {
+      const results = [];
+      for (const file of files) {
+        const fd = new FormData();
+        fd.append("image", file);
+        const res = await fetch(`${API_BASE}/admin/upload`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: fd,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          results.push({ name: file.name, url: null, status: data.error || "Upload failed" });
+          continue;
+        }
+        results.push({ name: file.name, url: data.url || data.secure_url || null, status: "Uploaded" });
+      }
+      setBulkUploadResults(results);
+    } catch (err) {
+      setBulkUploadError(err?.message || "Failed to upload images");
+    } finally {
+      setBulkUploading(false);
+    }
+  }
+
+  async function copyUrlsAsJson() {
+    const items = bulkUploadResults
+      .filter((r) => r.url)
+      .map((r) => ({ merchantName: "", city: "", imageUrl: r.url, description: "", category: "" }));
+    const json = JSON.stringify(items, null, 2);
+    try {
+      await navigator.clipboard.writeText(json);
+      setBulkSuccess(`Copied ${items.length} items as JSON to clipboard`);
+      setBulkUploadError("");
+    } catch {
+      setBulkUploadError("Could not copy. You can manually copy from the box.");
     }
   }
 
@@ -516,9 +565,33 @@ export default function AdminDealsPage() {
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-8">
             <div className="px-6 py-5 border-b border-slate-200 bg-slate-50/50">
               <h2 className="text-lg font-semibold text-slate-800">Bulk Upload Deals (Temporary)</h2>
-              <p className="text-sm text-slate-600 mt-1">Paste CSV or JSON array of deals. Required fields: merchantName, city, imageUrl. Optional: description, category, oldPrice, newPrice, expiresAt, deepLink, tags</p>
+              <p className="text-sm text-slate-600 mt-1">Paste CSV or JSON array of deals. Required fields: merchantName, city, imageUrl. Optional: description, category, oldPrice, newPrice, expiresAt, deepLink</p>
             </div>
             <div className="p-6 space-y-4">
+              {/* Step 1: Upload local images to get URLs */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-slate-700">Step 1: Upload local images</label>
+                <input type="file" multiple accept="image/*" onChange={handleBulkFileSelect} />
+                {bulkUploading && (
+                  <div className="text-xs text-slate-600">Uploading images...</div>
+                )}
+                {bulkUploadError && (
+                  <div className="rounded bg-red-50 border border-red-200 px-3 py-2 text-red-700 text-xs">{bulkUploadError}</div>
+                )}
+                {bulkUploadResults.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <button type="button" onClick={copyUrlsAsJson} className="px-3 py-1 border rounded text-sm">Copy URLs as JSON</button>
+                      <span className="text-xs text-slate-600">Uploaded: {bulkUploadResults.filter(r=>r.url).length} / {bulkUploadResults.length}</span>
+                    </div>
+                    <pre className="max-h-40 overflow-auto bg-slate-50 border border-slate-200 rounded p-2 text-[11px]">
+{JSON.stringify(bulkUploadResults, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+
+              {/* Step 2: Paste CSV or JSON */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">Input</label>
                 <textarea
@@ -543,7 +616,7 @@ export default function AdminDealsPage() {
                   }}
                   rows={12}
                   className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
-                  placeholder={`CSV example (with header):\nmerchantName,city,imageUrl,description,category,oldPrice,newPrice,expiresAt,deepLink,tags\nShop A,Lagos,https://res.cloudinary.com/.../a.jpg,Nice burger,Restaurants,5000,3500,2025-12-31,https://shop-a.com,burger|chips\n\nJSON example:\n[\n  {"merchantName":"Shop A","city":"Lagos","imageUrl":"https://res.cloudinary.com/.../a.jpg","category":"Restaurants","oldPrice":5000,"newPrice":3500,"expiresAt":"2025-12-31","deepLink":"https://shop-a.com","tags":["burger","chips"]}\n]`}
+                  placeholder={`CSV example (with header):\nmerchantName,city,imageUrl,description,category,oldPrice,newPrice,expiresAt,deepLink\nShop A,Lagos,https://res.cloudinary.com/.../a.jpg,Nice burger,Restaurants,5000,3500,2025-12-31,https://shop-a.com\n\nJSON example:\n[\n  {"merchantName":"Shop A","city":"Lagos","imageUrl":"https://res.cloudinary.com/.../a.jpg","category":"Restaurants","oldPrice":5000,"newPrice":3500,"expiresAt":"2025-12-31","deepLink":"https://shop-a.com"}\n]`}
                 />
                 <p className="text-xs text-slate-500 mt-2">Preview: {bulkPreviewCount} items detected</p>
               </div>
@@ -593,7 +666,6 @@ export default function AdminDealsPage() {
                             if (i === -1) return undefined;
                             return (cols[i] || "").trim();
                           };
-                          const tagsRaw = get("tags");
                           return {
                             merchantName: get("merchantname") || get("merchantName"),
                             city: get("city"),
@@ -604,7 +676,6 @@ export default function AdminDealsPage() {
                             newPrice: get("newprice") || get("newPrice"),
                             expiresAt: get("expiresat") || get("expiresAt"),
                             deepLink: get("deeplink") || get("deepLink"),
-                            tags: tagsRaw ? tagsRaw.split("|").map((t) => t.trim()).filter(Boolean) : [],
                           };
                         });
                       }
