@@ -35,6 +35,10 @@ export default function AdminDealsPage() {
   const [bulkUploading, setBulkUploading] = useState(false);
   const [bulkUploadResults, setBulkUploadResults] = useState([]);
   const [bulkUploadError, setBulkUploadError] = useState("");
+  // New: URL paste flow
+  const [urlText, setUrlText] = useState("");
+  const [defaults, setDefaults] = useState({ merchantName: "", city: "", category: "" });
+  const [urlSubmitting, setUrlSubmitting] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [currentImageUrl, setCurrentImageUrl] = useState("");
   // Delete confirmation modal state
@@ -379,7 +383,7 @@ export default function AdminDealsPage() {
                     : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
                 }`}
               >
-                Bulk Upload (Temporary)
+                Bulk Import
               </button>
               <button
                 onClick={() => setActiveTab("submissions")}
@@ -588,12 +592,12 @@ export default function AdminDealsPage() {
           </div>
         )}
 
-        {/* Bulk Upload (Temporary) */}
+        {/* Bulk Import */}
         {activeTab === "bulk" && (
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-8">
             <div className="px-6 py-5 border-b border-slate-200 bg-slate-50/50">
-              <h2 className="text-lg font-semibold text-slate-800">Bulk Upload Deals (Temporary)</h2>
-              <p className="text-sm text-slate-600 mt-1">Paste CSV or JSON array of deals. Required fields: merchantName, city, imageUrl. Optional: description, category, oldPrice, newPrice, expiresAt, deepLink</p>
+              <h2 className="text-lg font-semibold text-slate-800">Bulk Import Deals</h2>
+              <p className="text-sm text-slate-600 mt-1">Paste product URLs, JSON, or CSV. Required fields for CSV/JSON: merchantName, city, imageUrl. URLs are auto-scraped and images are saved to Cloudinary.</p>
             </div>
             <div className="p-6 space-y-4">
               {/* Step 1: Upload local images to get URLs */}
@@ -619,7 +623,100 @@ export default function AdminDealsPage() {
                 )}
               </div>
 
-              {/* Step 2: Paste CSV or JSON */}
+              {/* Step 2A: Paste product URLs (auto-scrape & Cloudinary upload) */}
+              <div className="mb-8">
+                <label className="block text-sm font-medium text-slate-700 mb-2">Product URLs (one per line)</label>
+                <textarea
+                  value={urlText}
+                  onChange={(e) => setUrlText(e.target.value)}
+                  rows={6}
+                  className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                  placeholder={`https://www.jumia.com.ng/...\nhttps://www.konga.com/...`}
+                />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700">Merchant</label>
+                    <input
+                      type="text"
+                      value={defaults.merchantName}
+                      onChange={(e)=>setDefaults((d)=>({ ...d, merchantName: e.target.value }))}
+                      placeholder="e.g., Jumia"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-300"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700">City</label>
+                    <input
+                      type="text"
+                      value={defaults.city}
+                      onChange={(e)=>setDefaults((d)=>({ ...d, city: e.target.value }))}
+                      placeholder="e.g., Lagos"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-300"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700">Category</label>
+                    <input
+                      type="text"
+                      value={defaults.category}
+                      onChange={(e)=>setDefaults((d)=>({ ...d, category: e.target.value }))}
+                      placeholder="e.g., Electronics"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-300"
+                    />
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center justify-end gap-3">
+                  <button
+                    type="button"
+                    className="rounded-lg bg-slate-200 text-slate-700 px-4 py-2 font-medium hover:bg-slate-300 transition-all duration-200"
+                    onClick={() => { setUrlText(""); setDefaults({ merchantName: "", city: "", category: "" }); setBulkError(""); setBulkSuccess(""); }}
+                  >
+                    Clear URLs
+                  </button>
+                  <button
+                    type="button"
+                    disabled={urlSubmitting}
+                    className="rounded-lg bg-primary text-white px-6 py-2 font-medium hover:brightness-110 transition-all duration-200 disabled:opacity-50"
+                    onClick={async () => {
+                      setUrlSubmitting(true);
+                      setBulkError("");
+                      setBulkSuccess("");
+                      try {
+                        const urls = (urlText || "").split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+                        if (!urls.length) throw new Error("Paste at least one URL");
+                        if (!defaults.city) throw new Error("City is required for all deals");
+                        const res = await fetch(`${API_BASE}/admin/deals/extract`, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                          body: JSON.stringify({ urls, defaults }),
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || "URL import failed");
+                        const created = Array.isArray(data.created) ? data.created : [];
+                        setDeals((d) => [...created, ...d]);
+                        const errs = Array.isArray(data.errors) ? data.errors.length : 0;
+                        setBulkSuccess(`Imported ${data.createdCount || created.length} deals from URLs.${errs ? ` ${errs} failed.` : ""}`);
+                        setUrlText("");
+                      } catch (e) {
+                        const msg = String(e?.message || "URL import failed");
+                        const looksHtml = /<!DOCTYPE html>/i.test(msg) || /<html/i.test(msg) || /Cannot POST \/admin\//i.test(msg);
+                        if (looksHtml) {
+                          setBulkError(`Received HTML error from ${API_BASE}. Ensure NEXT_PUBLIC_API_URL points to your backend (e.g., http://localhost:4000).`);
+                        } else {
+                          setBulkError(msg);
+                        }
+                      } finally {
+                        setUrlSubmitting(false);
+                      }
+                    }}
+                  >
+                    {urlSubmitting ? "Importing..." : "Create Deals from URLs"}
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500 mt-2">API: {API_BASE}</p>
+              </div>
+
+              {/* Step 2B: Paste CSV or JSON */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">Input</label>
                 <textarea

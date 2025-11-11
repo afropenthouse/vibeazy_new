@@ -4,6 +4,7 @@ const multer = require("multer");
 const adminAuth = require("../middleware/admin");
 const { signToken } = require("../utils/jwt");
 const { configureCloudinary } = require("../utils/cloudinary");
+const { extractProductFromUrl } = require("../utils/extractProduct");
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -191,6 +192,69 @@ router.post("/deals/bulk", adminAuth, async (req, res) => {
     console.error("Bulk create error", e);
     res.status(500).json({ error: "Failed to bulk create deals" });
   }
+});
+
+// Create deals by pasting product URLs. Uploads image to Cloudinary.
+// Body: { urls: string[], defaults?: { merchantName, city, category, expiresAt, deepLink } }
+router.post("/deals/extract", adminAuth, async (req, res) => {
+  const prisma = req.prisma;
+  const body = req.body || {};
+  const urls = Array.isArray(body.urls) ? body.urls.filter(Boolean) : [];
+  const defaults = body.defaults || {};
+  if (!urls.length) return res.status(400).json({ error: "Provide 'urls' as an array" });
+  if (!defaults.city || !String(defaults.city).trim()) {
+    return res.status(400).json({ error: "defaults.city is required" });
+  }
+  const cloudinary = configureCloudinary();
+
+  const created = [];
+  const errors = [];
+  for (const url of urls) {
+    try {
+      const data = await extractProductFromUrl(url);
+      const titleCandidate = String(data.title || defaults.title || url).trim();
+      if (!titleCandidate) throw new Error("Could not extract title");
+      // Determine merchant from defaults or hostname
+      const host = (() => { try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return null; } })();
+      const merchantName = (defaults.merchantName || host || "").trim();
+      if (!merchantName) throw new Error("Provide defaults.merchantName or use a valid URL");
+
+      // Upload image to Cloudinary if we got one
+      let imageUrl = data.imageUrl || defaults.imageUrl || null;
+      if (!imageUrl) throw new Error("No imageUrl found in page");
+      const uploadRes = await cloudinary.uploader.upload(imageUrl, { folder: "vibeazy/deals" });
+      const cloudUrl = uploadRes.secure_url;
+
+      // Price mapping: use extracted price as newPrice; oldPrice optional
+      const newPrice = data.price ?? null;
+      const oldPrice = defaults.oldPrice ?? null;
+      let discountPct = defaults.discountPct ?? null;
+      if (oldPrice !== null && newPrice !== null && Number(oldPrice) > 0 && Number(newPrice) >= 0 && Number(newPrice) <= Number(oldPrice)) {
+        discountPct = Math.round(((Number(oldPrice) - Number(newPrice)) / Number(oldPrice)) * 100);
+      }
+
+      const deal = await prisma.deal.create({ data: {
+        title: titleCandidate,
+        description: data.description || defaults.description || null,
+        merchantName,
+        city: String(defaults.city).trim(),
+        category: defaults.category || null,
+        tags: Array.isArray(defaults.tags) ? defaults.tags : [],
+        imageUrl: cloudUrl,
+        oldPrice: oldPrice ?? null,
+        newPrice: newPrice ?? null,
+        discountPct,
+        expiresAt: defaults.expiresAt ? new Date(defaults.expiresAt) : null,
+        deepLink: defaults.deepLink || url,
+        isActive: true,
+      } });
+      created.push(deal);
+    } catch (e) {
+      errors.push({ url, error: String(e?.message || e) });
+    }
+  }
+
+  res.status(201).json({ createdCount: created.length, created, errors });
 });
 
 // List all deals (admin)
