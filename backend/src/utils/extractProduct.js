@@ -8,7 +8,15 @@
 const cheerio = require("cheerio");
 
 async function fetchHtml(url) {
-  const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0 (compatible; VibeazyBot/1.0)" } });
+  const res = await fetch(url, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.9",
+      "Cache-Control": "no-cache",
+      "Pragma": "no-cache",
+    }
+  });
   if (!res.ok) throw new Error(`Fetch failed (${res.status}) for ${url}`);
   return await res.text();
 }
@@ -69,6 +77,68 @@ function tryMeta($) {
   const priceStr = getMeta('meta[property="product:price:amount"]') || getMeta('meta[property="og:price:amount"]') || getMeta('meta[name="price"]') || null;
   const newPrice = priceStr ? Number(String(priceStr).replace(/[^0-9.]/g, "")) : null;
   return { title, description, imageUrl, newPrice, oldPrice: null };
+}
+
+// Extract from embedded JSON (e.g., Next.js __NEXT_DATA__, Apollo state)
+function tryEmbeddedJson($, html) {
+  const scripts = $('script');
+  const candidates = [];
+  scripts.each((_, el) => {
+    const id = $(el).attr('id') || '';
+    const type = ($(el).attr('type') || '').toLowerCase();
+    const txt = $(el).text();
+    if (!txt || txt.length < 20) return;
+    if (id === '__NEXT_DATA__' || type === 'application/json' || /apollo|state|data/i.test(id)) {
+      candidates.push(txt);
+    } else if (/"price"|selling_price|oldPrice|originalPrice|discount/i.test(txt)) {
+      candidates.push(txt);
+    }
+  });
+
+  const pickFromObj = (root) => {
+    let title = null, description = null, imageUrl = null;
+    let newPrice = null, oldPrice = null;
+
+    const walker = (obj) => {
+      if (!obj || typeof obj !== 'object') return;
+      for (const [k, v] of Object.entries(obj)) {
+        const key = k.toLowerCase();
+        if (typeof v === 'string') {
+          if (!title && /name|title/.test(key) && v.length > 2) title = v;
+          if (!description && /description/.test(key) && v.length > 10) description = v;
+          if (!imageUrl && /image|imageurl|image_url/.test(key) && /^https?:/.test(v)) imageUrl = v;
+        }
+        if (typeof v === 'number') {
+          if (/old|original|list|was/.test(key) && /price/.test(key)) oldPrice = v;
+          if ((/current|new|selling|discount/.test(key) && /price/.test(key)) || key === 'price') newPrice = v;
+        }
+        if (Array.isArray(v)) {
+          v.forEach(walker);
+        } else if (typeof v === 'object' && v) {
+          walker(v);
+        }
+      }
+    };
+    walker(root);
+    return { title, description, imageUrl, newPrice, oldPrice };
+  };
+
+  for (const txt of candidates) {
+    try {
+      const parsed = JSON.parse(txt);
+      const got = pickFromObj(parsed);
+      if (got.newPrice || got.oldPrice || got.title || got.imageUrl) {
+        return {
+          title: got.title || null,
+          description: got.description || null,
+          imageUrl: got.imageUrl || null,
+          newPrice: got.newPrice ?? null,
+          oldPrice: got.oldPrice ?? null,
+        };
+      }
+    } catch { /* ignore */ }
+  }
+  return null;
 }
 
 // Heuristic price extractor:
@@ -178,6 +248,17 @@ async function extractProductFromUrl(url) {
   let data = tryJsonLd($);
   if (!data || (!data.title && !data.imageUrl && !data.newPrice)) {
     data = tryMeta($);
+  }
+  // Try embedded JSON like Next.js/Apollo if still missing
+  if (!data || (!data.newPrice && !data.oldPrice)) {
+    const ej = tryEmbeddedJson($, html);
+    if (ej) {
+      data.title = data.title || ej.title;
+      data.description = data.description || ej.description;
+      data.imageUrl = data.imageUrl || ej.imageUrl;
+      data.newPrice = data.newPrice ?? ej.newPrice;
+      data.oldPrice = data.oldPrice ?? ej.oldPrice;
+    }
   }
   // add heuristic prices if missing or only one present
   const ph = extractPricesHeuristic($);

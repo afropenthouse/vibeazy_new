@@ -226,10 +226,8 @@ router.post("/deals/extract", adminAuth, async (req, res) => {
       const cloudUrl = uploadRes.secure_url;
 
       // Price mapping: extract both old and new when available
-      const defaultOld = defaults.oldPrice !== undefined && defaults.oldPrice !== "" ? Number(defaults.oldPrice) : undefined;
-      const defaultNew = defaults.newPrice !== undefined && defaults.newPrice !== "" ? Number(defaults.newPrice) : undefined;
-      const newPrice = data.newPrice ?? defaultNew ?? null;
-      const oldPrice = data.oldPrice ?? defaultOld ?? null;
+      const newPrice = data.newPrice ?? null;
+      const oldPrice = data.oldPrice ?? defaults.oldPrice ?? null;
       let discountPct = defaults.discountPct ?? null;
       if (oldPrice !== null && newPrice !== null && Number(oldPrice) > 0 && Number(newPrice) >= 0 && Number(newPrice) <= Number(oldPrice)) {
         discountPct = Math.round(((Number(oldPrice) - Number(newPrice)) / Number(oldPrice)) * 100);

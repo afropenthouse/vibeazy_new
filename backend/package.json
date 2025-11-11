@@ -10,7 +10,8 @@
     "lint": "echo 'Linting backend code...'",
     "test": "echo 'Running backend tests...'",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev --name init"
+    "prisma:migrate": "prisma migrate dev --name init",
+    "prisma:seed": "prisma db seed"
   },
   "dependencies": {
     "@prisma/client": "^5.17.0",
@@ -28,5 +29,8 @@
   "devDependencies": {
     "nodemon": "^3.0.1",
     "prisma": "^5.17.0"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   }
 }

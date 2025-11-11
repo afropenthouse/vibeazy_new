@@ -37,7 +37,7 @@ export default function AdminDealsPage() {
   const [bulkUploadError, setBulkUploadError] = useState("");
   // New: URL paste flow
   const [urlText, setUrlText] = useState("");
-  const [defaults, setDefaults] = useState({ merchantName: "", city: "", category: "", oldPrice: "", newPrice: "", discountPct: "" });
+  const [defaults, setDefaults] = useState({ merchantName: "", city: "", category: "" });
   const [urlSubmitting, setUrlSubmitting] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [currentImageUrl, setCurrentImageUrl] = useState("");
@@ -665,65 +665,11 @@ export default function AdminDealsPage() {
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700">Default Old Price</label>
-                    <input
-                      type="number"
-                      value={defaults.oldPrice}
-                      onChange={(e)=>{
-                        const v = e.target.value;
-                        setDefaults((d)=>{
-                          const oldP = v ? Number(v) : undefined;
-                          const newP = d.newPrice ? Number(d.newPrice) : undefined;
-                          let discount = "";
-                          if (typeof oldP === "number" && typeof newP === "number" && oldP > 0 && newP >= 0 && newP <= oldP) {
-                            discount = String(Math.round(((oldP - newP) / oldP) * 100));
-                          }
-                          return { ...d, oldPrice: v, discountPct: discount };
-                        });
-                      }}
-                      placeholder="₦0.00"
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700">Default New Price</label>
-                    <input
-                      type="number"
-                      value={defaults.newPrice}
-                      onChange={(e)=>{
-                        const v = e.target.value;
-                        setDefaults((d)=>{
-                          const oldP = d.oldPrice ? Number(d.oldPrice) : undefined;
-                          const newP = v ? Number(v) : undefined;
-                          let discount = "";
-                          if (typeof oldP === "number" && typeof newP === "number" && oldP > 0 && newP >= 0 && newP <= oldP) {
-                            discount = String(Math.round(((oldP - newP) / oldP) * 100));
-                          }
-                          return { ...d, newPrice: v, discountPct: discount };
-                        });
-                      }}
-                      placeholder="₦0.00"
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700">Discount % (auto)</label>
-                    <input
-                      type="number"
-                      value={defaults.discountPct}
-                      readOnly
-                      placeholder="Calculated"
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-slate-50 text-slate-700"
-                    />
-                  </div>
-                </div>
                 <div className="mt-3 flex items-center justify-end gap-3">
                   <button
                     type="button"
                     className="rounded-lg bg-slate-200 text-slate-700 px-4 py-2 font-medium hover:bg-slate-300 transition-all duration-200"
-                    onClick={() => { setUrlText(""); setDefaults({ merchantName: "", city: "", category: "", oldPrice: "", newPrice: "", discountPct: "" }); setBulkError(""); setBulkSuccess(""); }}
+                    onClick={() => { setUrlText(""); setDefaults({ merchantName: "", city: "", category: "" }); setBulkError(""); setBulkSuccess(""); }}
                   >
                     Clear URLs
                   </button>
