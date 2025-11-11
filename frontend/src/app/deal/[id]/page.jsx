@@ -7,17 +7,6 @@ import { DEALS_DATA } from "@/components/SearchFilter";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
-// Convert API values to numbers even when Prisma Decimal is serialized as string
-const toNumber = (v) => {
-  if (typeof v === "number") return v;
-  if (typeof v === "string") {
-    const cleaned = v.replace(/[\,\s]/g, "");
-    const n = Number(cleaned);
-    return Number.isFinite(n) ? n : undefined;
-  }
-  return undefined;
-};
-
 function mapApiDealToCard(d) {
   return {
     id: d.id,
@@ -26,10 +15,10 @@ function mapApiDealToCard(d) {
     description: d.description || "",
     place: d.city || "",
     image: d.imageUrl || "/placeholder.png",
-    priceOriginal: toNumber(d.oldPrice),
-    priceCurrent: toNumber(d.newPrice),
-    expiresAt: d.expiresAt || d.expires_at || undefined,
-    url: d.deepLink || d.deep_link || undefined,
+    priceOriginal: typeof d.oldPrice === "number" ? d.oldPrice : undefined,
+    priceCurrent: typeof d.newPrice === "number" ? d.newPrice : undefined,
+    expiresAt: d.expiresAt || undefined,
+    url: d.deepLink || undefined,
   };
 }
 
