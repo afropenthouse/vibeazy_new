@@ -9,6 +9,19 @@ const { extractProductFromUrl } = require("../utils/extractProduct");
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
+// Helper: ensure descriptions are a single sentence for card UI
+function oneSentence(desc, maxChars = 180) {
+  if (!desc) return null;
+  const txt = String(desc).replace(/\s+/g, " ").trim();
+  const m = txt.match(/[.!?]/);
+  if (m) {
+    const end = txt.indexOf(m[0]);
+    return txt.slice(0, end + 1);
+  }
+  const slice = txt.slice(0, maxChars).replace(/\s+\S*$/, "");
+  return slice.length ? `${slice}.` : txt;
+}
+
 // Admin login using single env credentials
 router.post("/login", async (req, res) => {
   const { email, password } = req.body || {};
@@ -192,6 +205,81 @@ router.post("/deals/bulk", adminAuth, async (req, res) => {
     console.error("Bulk create error", e);
     res.status(500).json({ error: "Failed to bulk create deals" });
   }
+});
+
+// Bulk create deals and upload each image to Cloudinary
+// Body: { items: DealInput[], options?: { uploadToCloudinary?: boolean } }
+// DealInput: { title?, description?, merchantName, city, category?, tags?, imageUrl, oldPrice?, newPrice?, discountPct?, expiresAt?, deepLink?, isActive? }
+router.post("/deals/bulk-upload", adminAuth, async (req, res) => {
+  const prisma = req.prisma;
+  const body = req.body || {};
+  const items = Array.isArray(body.items) ? body.items : [];
+  const uploadToCloudinary = body.options?.uploadToCloudinary !== false; // default true
+  if (!items.length) return res.status(400).json({ error: "Provide an array of items in 'items'" });
+
+  const cloudinary = configureCloudinary();
+  const created = [];
+  const errors = [];
+
+  const autoDiscount = (oldPrice, newPrice) => {
+    if (oldPrice === undefined || newPrice === undefined || oldPrice === null || newPrice === null) return null;
+    const oldP = Number(oldPrice);
+    const newP = Number(newPrice);
+    if (Number.isFinite(oldP) && Number.isFinite(newP) && oldP > 0 && newP >= 0 && newP <= oldP) {
+      return Math.round(((oldP - newP) / oldP) * 100);
+    }
+    return null;
+  };
+
+  for (let idx = 0; idx < items.length; idx++) {
+    const raw = items[idx] || {};
+    try {
+      const merchantName = String(raw.merchantName || "").trim();
+      const city = String(raw.city || "").trim();
+      let imageUrl = String(raw.imageUrl || "").trim();
+      const titleCandidate = String((raw.title ?? raw.description ?? merchantName) || "").trim();
+      if (!merchantName || !city || !imageUrl || !titleCandidate) {
+        throw new Error("Missing fields (merchantName, city, imageUrl, title/description)");
+      }
+
+      // Upload to Cloudinary if requested
+      if (uploadToCloudinary) {
+        const uploadRes = await cloudinary.uploader.upload(imageUrl, { folder: "vibeazy/deals" });
+        imageUrl = uploadRes.secure_url;
+      }
+
+      const oldPrice = raw.oldPrice ?? null;
+      const newPrice = raw.newPrice ?? null;
+      const discountPct = raw.discountPct ?? autoDiscount(oldPrice, newPrice);
+      const expiresAt = raw.expiresAt ? new Date(raw.expiresAt) : null;
+      const tags = Array.isArray(raw.tags)
+        ? raw.tags
+        : typeof raw.tags === "string" && raw.tags.length
+          ? raw.tags.split("|").map((t) => t.trim()).filter(Boolean)
+          : [];
+
+      const deal = await prisma.deal.create({ data: {
+        title: titleCandidate,
+        description: oneSentence(raw.description || null),
+        merchantName,
+        city,
+        category: raw.category || null,
+        tags,
+        imageUrl,
+        oldPrice,
+        newPrice,
+        discountPct,
+        expiresAt,
+        deepLink: raw.deepLink || null,
+        isActive: raw.isActive !== undefined ? !!raw.isActive : true,
+      } });
+      created.push(deal);
+    } catch (e) {
+      errors.push({ index: idx, error: String(e?.message || e) });
+    }
+  }
+
+  res.status(201).json({ createdCount: created.length, created, errors });
 });
 
 // Create deals by pasting product URLs. Uploads image to Cloudinary.
