@@ -129,6 +129,41 @@ function extractPricesHeuristic($) {
     pushPercentNums(text);
   });
 
+  // Attribute-based hints commonly used by storefronts
+  $('*').each((_, el) => {
+    const attr = el.attribs || {};
+    const maybePush = (key, bucket) => {
+      if (attr[key]) pushCurrencyNums(attr[key], bucket);
+    };
+    maybePush('data-price', priceCandidates);
+    maybePush('data-amount', priceCandidates);
+    maybePush('data-value', priceCandidates);
+    maybePush('data-old-price', oldCandidates);
+    maybePush('data-original-price', oldCandidates);
+    maybePush('data-was', oldCandidates);
+  });
+
+  // Body text scan with simple contextual filtering to avoid shipping/ratings
+  const bodyText = $('body').text() || '';
+  const segments = bodyText.split(/[\n\.]+/);
+  const ignore = /(ship|shipping|delivery|fee|rating|review|verified|stars|tax|vat)/i;
+  segments.forEach((seg) => {
+    const s = seg.trim();
+    if (!s) return;
+    // skip known non-price contexts
+    if (ignore.test(s)) return;
+    // hint: old/list/was
+    if (/old|was|list|original/i.test(s)) {
+      pushCurrencyNums(s, oldCandidates);
+    }
+    // hint: save/discount
+    if (/save|discount/i.test(s)) {
+      pushCurrencyNums(s, saveCandidates);
+    }
+    pushCurrencyNums(s, priceCandidates);
+    pushPercentNums(s);
+  });
+
   // Decide newPrice
   let newPrice = null;
   if (priceCandidates.length) {
