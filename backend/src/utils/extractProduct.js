@@ -99,6 +99,13 @@ function tryEmbeddedJson($, html) {
     let title = null, description = null, imageUrl = null;
     let newPrice = null, oldPrice = null;
 
+    const numFromStr = (s) => {
+      const m = String(s || '').match(/([0-9]{2,}(?:,[0-9]{3})*(?:\.[0-9]+)?)/);
+      if (!m) return null;
+      const n = Number(m[1].replace(/,/g, ''));
+      return Number.isFinite(n) ? n : null;
+    };
+
     const walker = (obj) => {
       if (!obj || typeof obj !== 'object') return;
       for (const [k, v] of Object.entries(obj)) {
@@ -107,6 +114,15 @@ function tryEmbeddedJson($, html) {
           if (!title && /name|title/.test(key) && v.length > 2) title = v;
           if (!description && /description/.test(key) && v.length > 10) description = v;
           if (!imageUrl && /image|imageurl|image_url/.test(key) && /^https?:/.test(v)) imageUrl = v;
+          // string price values
+          if ((/old|original|list|was/.test(key) && /price/.test(key))) {
+            const n = numFromStr(v);
+            if (n) oldPrice = n;
+          }
+          if ((/current|new|selling|discount/.test(key) && /price/.test(key)) || key === 'price') {
+            const n = numFromStr(v);
+            if (n) newPrice = n;
+          }
         }
         if (typeof v === 'number') {
           if (/old|original|list|was/.test(key) && /price/.test(key)) oldPrice = v;
@@ -139,6 +155,42 @@ function tryEmbeddedJson($, html) {
     } catch { /* ignore */ }
   }
   return null;
+}
+
+function parseNumber(str) {
+  const m = String(str || '').match(/([0-9]{3,}(?:,[0-9]{3})*(?:\.[0-9]+)?)/);
+  if (!m) return null;
+  const n = Number(m[1].replace(/,/g, ''));
+  return Number.isFinite(n) ? n : null;
+}
+
+function findFirstJsonNumber(html, keys) {
+  for (const key of keys) {
+    const rx = new RegExp(`"${key}"\s*:\s*"?([0-9.,]+)"?`, 'i');
+    const m = html.match(rx);
+    if (m) {
+      const n = parseNumber(m[1]);
+      if (n !== null) return n;
+    }
+  }
+  return null;
+}
+
+function extractJumia(html) {
+  // Common keys seen on Jumia pages
+  const newKeys = ['currentPrice', 'sellingPrice', 'discountedPrice', 'price'];
+  const oldKeys = ['oldPrice', 'originalPrice', 'listPrice', 'wasPrice', 'previousPrice'];
+  const newPrice = findFirstJsonNumber(html, newKeys);
+  const oldPrice = findFirstJsonNumber(html, oldKeys);
+  return { newPrice, oldPrice };
+}
+
+function extractKonga(html) {
+  const newKeys = ['current_price', 'selling_price', 'discounted_price', 'price'];
+  const oldKeys = ['old_price', 'original_price', 'list_price', 'was_price', 'previous_price'];
+  const newPrice = findFirstJsonNumber(html, newKeys);
+  const oldPrice = findFirstJsonNumber(html, oldKeys);
+  return { newPrice, oldPrice };
 }
 
 // Heuristic price extractor:
@@ -260,6 +312,20 @@ async function extractProductFromUrl(url) {
       data.oldPrice = data.oldPrice ?? ej.oldPrice;
     }
   }
+  // Domain-specific extractors for Jumia/Konga
+  try {
+    const host = new URL(url).hostname;
+    if ((!data.newPrice || !data.oldPrice) && /jumia/i.test(host)) {
+      const d = extractJumia(html);
+      if (!data.newPrice && d.newPrice !== null) data.newPrice = d.newPrice;
+      if (!data.oldPrice && d.oldPrice !== null) data.oldPrice = d.oldPrice;
+    }
+    if ((!data.newPrice || !data.oldPrice) && /konga/i.test(host)) {
+      const d = extractKonga(html);
+      if (!data.newPrice && d.newPrice !== null) data.newPrice = d.newPrice;
+      if (!data.oldPrice && d.oldPrice !== null) data.oldPrice = d.oldPrice;
+    }
+  } catch {}
   // add heuristic prices if missing or only one present
   const ph = extractPricesHeuristic($);
   if (ph.newPrice && !data.newPrice) data.newPrice = ph.newPrice;
