@@ -225,9 +225,9 @@ router.post("/deals/extract", adminAuth, async (req, res) => {
       const uploadRes = await cloudinary.uploader.upload(imageUrl, { folder: "vibeazy/deals" });
       const cloudUrl = uploadRes.secure_url;
 
-      // Price mapping: use extracted price as newPrice; oldPrice optional
-      const newPrice = data.price ?? null;
-      const oldPrice = defaults.oldPrice ?? null;
+      // Price mapping: extract both old and new when available
+      const newPrice = data.newPrice ?? null;
+      const oldPrice = data.oldPrice ?? defaults.oldPrice ?? null;
       let discountPct = defaults.discountPct ?? null;
       if (oldPrice !== null && newPrice !== null && Number(oldPrice) > 0 && Number(newPrice) >= 0 && Number(newPrice) <= Number(oldPrice)) {
         discountPct = Math.round(((Number(oldPrice) - Number(newPrice)) / Number(oldPrice)) * 100);
@@ -245,7 +245,7 @@ router.post("/deals/extract", adminAuth, async (req, res) => {
         newPrice: newPrice ?? null,
         discountPct,
         expiresAt: defaults.expiresAt ? new Date(defaults.expiresAt) : null,
-        deepLink: defaults.deepLink || url,
+        deepLink: url,
         isActive: true,
       } });
       created.push(deal);
