@@ -121,11 +121,62 @@ router.get("/deals", adminAuth, async (req, res) => {
 router.patch("/deals/:id", adminAuth, async (req, res) => {
   const prisma = req.prisma;
   const id = Number(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "Invalid id" });
+
   try {
-    const deal = await prisma.deal.update({ where: { id }, data: req.body });
+    const body = req.body || {};
+
+    // Build a safe update payload with proper type coercion
+    const has = (v) => v !== undefined;
+    const toNum = (v) => {
+      if (v === null) return null;
+      if (v === undefined || v === "") return undefined;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : undefined;
+    };
+
+    const data = {};
+    if (has(body.description)) data.description = body.description || null;
+    if (has(body.merchantName)) data.merchantName = body.merchantName;
+    if (has(body.city)) data.city = body.city;
+    if (has(body.category)) data.category = body.category || null;
+    if (has(body.tags)) data.tags = Array.isArray(body.tags) ? body.tags : [];
+    if (has(body.imageUrl)) data.imageUrl = body.imageUrl;
+    const oldPrice = toNum(body.oldPrice);
+    const newPrice = toNum(body.newPrice);
+    if (oldPrice !== undefined) data.oldPrice = oldPrice === null ? null : oldPrice;
+    if (newPrice !== undefined) data.newPrice = newPrice === null ? null : newPrice;
+    // Recalculate discountPct if prices provided, otherwise use supplied value
+    let discountPct = body.discountPct !== undefined ? toNum(body.discountPct) : undefined;
+    if (oldPrice !== undefined && newPrice !== undefined && oldPrice !== null && newPrice !== null && oldPrice > 0 && newPrice >= 0 && newPrice <= oldPrice) {
+      discountPct = Math.round(((oldPrice - newPrice) / oldPrice) * 100);
+    }
+    if (discountPct !== undefined) data.discountPct = discountPct === null ? null : discountPct;
+
+    if (has(body.expiresAt)) {
+      if (!body.expiresAt) {
+        data.expiresAt = null;
+      } else {
+        // Accept either Date, ISO string, or yyyy-mm-dd string
+        const dt = new Date(body.expiresAt);
+        if (isNaN(dt.getTime())) {
+          return res.status(400).json({ error: "Invalid expiresAt" });
+        }
+        data.expiresAt = dt;
+      }
+    }
+    if (has(body.deepLink)) data.deepLink = body.deepLink || null;
+    if (has(body.isActive)) data.isActive = !!body.isActive;
+
+    const deal = await prisma.deal.update({ where: { id }, data });
     res.json({ deal });
   } catch (e) {
-    res.status(404).json({ error: "Deal not found" });
+    // Prisma not found error
+    if (e && (e.code === "P2025" || /not found/i.test(String(e?.message)))) {
+      return res.status(404).json({ error: "Deal not found" });
+    }
+    console.error("Update deal error", e);
+    res.status(400).json({ error: "Invalid update payload" });
   }
 });
 
