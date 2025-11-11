@@ -12,10 +12,10 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const [cityOpen, setCityOpen] = useState(false);
-  const [selectedCity, setSelectedCity] = useState("Lagos");
+  const [selectedCity, setSelectedCity] = useState("All");
 
-  // Location dropdown options — Lagos pinned first and default
-  const CITY_OPTIONS = ["Lagos", "Abuja", "Port Harcourt"];
+  // Location dropdown options — include "All" as default
+  const CITY_OPTIONS = ["All", "Lagos", "Abuja", "Port Harcourt"];
 
   useEffect(() => {
     const onDocClick = (e) => {
@@ -32,7 +32,7 @@ export default function Header() {
     const term = form.search.value.trim();
     const params = new URLSearchParams();
     if (term) params.set("search", term);
-    if (selectedCity) params.set("city", selectedCity);
+    if (selectedCity && selectedCity !== "All") params.set("city", selectedCity);
     router.push(`/?${params.toString()}#hot-deals`);
   };
   return (

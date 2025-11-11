@@ -566,7 +566,7 @@ function mapApiDealToCard(d) {
 export default function SearchFilter() {
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedCity, setSelectedCity] = useState("Lagos");
+  const [selectedCity, setSelectedCity] = useState("All");
   const [apiDeals, setApiDeals] = useState([]);
 
   // Read initial filters from URL (?q=...&category=...&city=...)
@@ -576,7 +576,7 @@ export default function SearchFilter() {
       // Read search terms from header which uses `search` param; fall back to `q`
       const q = params.get("search") || params.get("q") || "";
       const cat = params.get("category") || "All";
-      const city = params.get("city") || "Lagos";
+      const city = params.get("city") || "All";
       const rafId = window.requestAnimationFrame(() => {
         if (q) setQuery(q);
         // Accept either the option value (e.g. "Restaurants") or the visible label
@@ -630,7 +630,17 @@ export default function SearchFilter() {
         d.title.toLowerCase().includes(q) ||
         d.description.toLowerCase().includes(q) ||
         (d.place?.toLowerCase().includes(q));
-      const matchesCity = selectedCity ? (d.place?.toLowerCase() === selectedCity.toLowerCase()) : true;
+      // City matching: support "All" and comma-separated city lists (e.g., "lagos, ikeja")
+      let matchesCity = true;
+      const sel = (selectedCity || "").trim().toLowerCase();
+      if (sel && sel !== "all") {
+        const raw = (d.place || "").toLowerCase();
+        const tokens = raw
+          .split(/[\,\|\/]+/)
+          .map((t) => t.trim())
+          .filter(Boolean);
+        matchesCity = tokens.length === 0 ? false : tokens.includes(sel);
+      }
       // Normalize both the deal.category and the selectedCategory to the canonical
       // option.value when possible. This handles cases where categories were saved
       // with a long display name ("Food & Restaurants") but our select uses
