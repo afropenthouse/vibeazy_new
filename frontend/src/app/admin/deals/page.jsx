@@ -38,6 +38,34 @@ export default function AdminDealsPage() {
   const [editingId, setEditingId] = useState(null);
   const [currentImageUrl, setCurrentImageUrl] = useState("");
   // Delete confirmation modal state
+
+  // Helper: sanitize pasted input to avoid hidden BOM/smart quotes causing JSON.parse issues
+  const sanitizeInput = (s) => {
+    try {
+      return String(s || "")
+        .replace(/\uFEFF/g, "") // strip BOM
+        .replace(/[“”]/g, '"') // curly double quotes -> plain
+        .replace(/[‘’]/g, "'") // curly single quotes -> plain
+        .trim();
+    } catch {
+      return String(s || "").trim();
+    }
+  };
+
+  // Helper: robustly parse a fetch response; fall back to text when JSON is not returned
+  async function parseJsonSafe(res) {
+    const ct = res.headers.get("content-type") || "";
+    if (ct.includes("application/json")) {
+      try {
+        return await res.json();
+      } catch (e) {
+        const t = await res.text().catch(() => "");
+        throw new Error(t || "Server returned invalid JSON");
+      }
+    }
+    const t = await res.text().catch(() => "");
+    throw new Error(t || `HTTP ${res.status} ${res.statusText}`);
+  }
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -597,11 +625,12 @@ export default function AdminDealsPage() {
                 <textarea
                   value={bulkText}
                   onChange={(e) => {
-                    setBulkText(e.target.value);
+                    const sanitized = sanitizeInput(e.target.value);
+                    setBulkText(sanitized);
                     // quick preview count
                     try {
                       let count = 0;
-                      const txt = e.target.value || "";
+                      const txt = sanitized || "";
                       if (txt.trim().startsWith("[")) {
                         const arr = JSON.parse(txt);
                         count = Array.isArray(arr) ? arr.length : 0;
@@ -647,7 +676,7 @@ export default function AdminDealsPage() {
                     try {
                       // Parse input
                       let items = [];
-                      const txt = bulkText.trim();
+                      const txt = sanitizeInput(bulkText);
                       if (!txt) throw new Error("Paste CSV or JSON first");
                       if (txt.startsWith("[")) {
                         const arr = JSON.parse(txt);
@@ -686,7 +715,7 @@ export default function AdminDealsPage() {
                         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
                         body: JSON.stringify({ deals: items }),
                       });
-                      const data = await res.json();
+                      const data = await parseJsonSafe(res);
                       if (!res.ok) throw new Error(data.error || "Bulk create failed");
                       const created = Array.isArray(data.created) ? data.created : [];
                       setDeals((d) => [...created, ...d]);
