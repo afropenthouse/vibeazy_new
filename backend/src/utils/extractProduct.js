@@ -71,46 +71,105 @@ function tryMeta($) {
   return { title, description, imageUrl, newPrice, oldPrice: null };
 }
 
-// Heuristic price extractor: look at common elements and pick min as newPrice, max as oldPrice
+// Heuristic price extractor:
+// - Reads typical price elements
+// - Detects "save" amounts and "% off" to infer oldPrice when missing
 function extractPricesHeuristic($) {
-  const candidates = [];
-  const pushNums = (text) => {
+  const priceCandidates = [];
+  const oldCandidates = [];
+  const saveCandidates = [];
+  const pctCandidates = [];
+
+  const pushCurrencyNums = (text, bucket) => {
     const str = String(text || "");
     const rx = /(?:₦|NGN|N\$|\$|£)?\s*([0-9]{3,}(?:,[0-9]{3})*(?:\.[0-9]+)?)/g;
     let m;
     while ((m = rx.exec(str))) {
       const raw = m[1];
       const n = Number(raw.replace(/,/g, ""));
-      if (Number.isFinite(n) && n >= 100 && n <= 100000000) candidates.push(n);
+      if (Number.isFinite(n) && n >= 100 && n <= 100000000) bucket.push(n);
     }
   };
-  // Typical elements containing prices
-  $('meta[property="product:price:amount"], meta[property="og:price:amount"], meta[name="price"]').each((_, el) => pushNums($(el).attr('content')));
-  $('del, s, strike, .old, .price-old, [class*="old"], [class*="strike"], [class*="was-price"], [class*="list-price"]').each((_, el) => pushNums($(el).text()));
-  $('[class*="price"], .price').each((_, el) => pushNums($(el).text()));
-  // If many numbers, pick sensible extremes
-  const uniq = Array.from(new Set(candidates)).sort((a,b)=>a-b);
-  if (uniq.length === 0) return { newPrice: null, oldPrice: null };
-  if (uniq.length === 1) return { newPrice: uniq[0], oldPrice: null };
-  const newPrice = uniq[0];
-  const oldPrice = uniq[uniq.length - 1] !== newPrice ? uniq[uniq.length - 1] : null;
+
+  const pushPercentNums = (text) => {
+    const str = String(text || "");
+    const rx = /([0-9]{1,3})\s*%/g;
+    let m;
+    while ((m = rx.exec(str))) {
+      const p = Number(m[1]);
+      if (Number.isFinite(p) && p > 0 && p < 100) pctCandidates.push(p);
+    }
+  };
+
+  // Meta price amount hints (typically current/new price)
+  $('meta[property="product:price:amount"], meta[property="og:price:amount"], meta[name="price"]').each((_, el) => {
+    pushCurrencyNums($(el).attr('content'), priceCandidates);
+  });
+
+  // Old price patterns
+  $('del, s, strike, .old, .price-old, [class*="old"], [class*="strike"], [class*="was-price"], [class*="list-price"]').each((_, el) => {
+    const text = $(el).text();
+    pushCurrencyNums(text, oldCandidates);
+  });
+
+  // Generic price containers
+  $('[class*="price"], .price').each((_, el) => {
+    const text = $(el).text();
+    pushCurrencyNums(text, priceCandidates);
+  });
+
+  // Save amount and percent-off hints
+  $('*[class*="save"], .save, [data-save], *:contains("Save")').each((_, el) => {
+    const text = $(el).text();
+    pushCurrencyNums(text, saveCandidates);
+    pushPercentNums(text);
+  });
+  $('*[class*="off"], .discount, [class*="percent"], *:contains("% OFF"), *:contains("off")').each((_, el) => {
+    const text = $(el).text();
+    pushPercentNums(text);
+  });
+
+  // Decide newPrice
+  let newPrice = null;
+  if (priceCandidates.length) {
+    newPrice = Math.min(...priceCandidates);
+  }
+
+  // Decide oldPrice priority: explicit old candidates > save + new > pct + new > max of all
+  let oldPrice = null;
+  if (oldCandidates.length) {
+    oldPrice = Math.max(...oldCandidates);
+  } else if (newPrice !== null && saveCandidates.length) {
+    oldPrice = newPrice + Math.max(...saveCandidates);
+  } else if (newPrice !== null && pctCandidates.length) {
+    const pct = Math.max(...pctCandidates);
+    oldPrice = Math.round(newPrice / (1 - pct / 100));
+  } else {
+    const all = [...priceCandidates];
+    if (all.length >= 2) oldPrice = Math.max(...all);
+  }
+
   // Guard: ensure oldPrice >= newPrice
-  if (oldPrice !== null && oldPrice < newPrice) return { newPrice, oldPrice: null };
-  return { newPrice, oldPrice };
+  if (oldPrice !== null && newPrice !== null && oldPrice < newPrice) {
+    oldPrice = null;
+  }
+
+  return { newPrice: newPrice ?? null, oldPrice: oldPrice ?? null };
 }
 
-function truncateDescription(desc, maxChars = 180) {
+// Always return a single sentence, trimmed to nearest punctuation or safe word boundary
+function oneSentence(desc, maxChars = 180) {
   if (!desc) return null;
   const txt = String(desc).replace(/\s+/g, " ").trim();
-  if (txt.length <= maxChars) {
-    const firstStop = txt.indexOf('. ');
-    return firstStop !== -1 ? txt.slice(0, firstStop + 1) : txt;
+  // Find first sentence terminator
+  const m = txt.match(/[.!?]/);
+  if (m) {
+    const end = txt.indexOf(m[0]);
+    return txt.slice(0, end + 1);
   }
-  const slice = txt.slice(0, maxChars);
-  const lastDot = slice.lastIndexOf('.');
-  if (lastDot > maxChars * 0.5) return slice.slice(0, lastDot + 1);
-  // fallback to whole-word cut
-  return slice.replace(/\s+\S*$/, '...');
+  // No punctuation: cut to maxChars at word boundary and add period
+  const slice = txt.slice(0, maxChars).replace(/\s+\S*$/, "");
+  return slice.length ? `${slice}.` : txt;
 }
 
 async function extractProductFromUrl(url) {
@@ -126,7 +185,7 @@ async function extractProductFromUrl(url) {
   if (ph.oldPrice) data.oldPrice = ph.oldPrice;
   // Normalize strings
   if (data.title) data.title = String(data.title).trim();
-  if (data.description) data.description = truncateDescription(data.description);
+  if (data.description) data.description = oneSentence(data.description);
   if (data.imageUrl) data.imageUrl = String(data.imageUrl).trim();
   return data;
 }
