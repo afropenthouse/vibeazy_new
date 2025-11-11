@@ -77,9 +77,10 @@ export default function Hero() {
   const router = useRouter();
 
   // Auto-advance: first slide 10s, others 5s
+  //10000
   useEffect(() => {
     if (slides.length <= 1) return;
-    const duration = index === 0 ? 10000 : 5000;
+    const duration = index === 0 ? 3000 : 4000;
     const id = setTimeout(() => {
       setIndex((i) => (i + 1) % slides.length);
     }, duration);
