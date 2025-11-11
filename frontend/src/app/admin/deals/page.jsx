@@ -26,6 +26,12 @@ export default function AdminDealsPage() {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("create");
+  // Bulk upload state
+  const [bulkText, setBulkText] = useState("");
+  const [bulkPreviewCount, setBulkPreviewCount] = useState(0);
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
+  const [bulkError, setBulkError] = useState("");
+  const [bulkSuccess, setBulkSuccess] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [currentImageUrl, setCurrentImageUrl] = useState("");
   // Delete confirmation modal state
@@ -289,6 +295,16 @@ export default function AdminDealsPage() {
                 Browse Deals ({deals.length})
               </button>
               <button
+                onClick={() => setActiveTab("bulk")}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "bulk"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+                }`}
+              >
+                Bulk Upload (Temporary)
+              </button>
+              <button
                 onClick={() => setActiveTab("submissions")}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === "submissions"
@@ -492,6 +508,132 @@ export default function AdminDealsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        )}
+
+        {/* Bulk Upload (Temporary) */}
+        {activeTab === "bulk" && (
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+            <div className="px-6 py-5 border-b border-slate-200 bg-slate-50/50">
+              <h2 className="text-lg font-semibold text-slate-800">Bulk Upload Deals (Temporary)</h2>
+              <p className="text-sm text-slate-600 mt-1">Paste CSV or JSON array of deals. Required fields: merchantName, city, imageUrl. Optional: description, category, oldPrice, newPrice, expiresAt, deepLink, tags</p>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Input</label>
+                <textarea
+                  value={bulkText}
+                  onChange={(e) => {
+                    setBulkText(e.target.value);
+                    // quick preview count
+                    try {
+                      let count = 0;
+                      const txt = e.target.value || "";
+                      if (txt.trim().startsWith("[")) {
+                        const arr = JSON.parse(txt);
+                        count = Array.isArray(arr) ? arr.length : 0;
+                      } else {
+                        const lines = txt.split(/\r?\n/).filter((l) => l.trim().length > 0);
+                        if (lines.length > 1) count = lines.length - 1; // header + rows
+                      }
+                      setBulkPreviewCount(count);
+                    } catch {
+                      setBulkPreviewCount(0);
+                    }
+                  }}
+                  rows={12}
+                  className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                  placeholder={`CSV example (with header):\nmerchantName,city,imageUrl,description,category,oldPrice,newPrice,expiresAt,deepLink,tags\nShop A,Lagos,https://res.cloudinary.com/.../a.jpg,Nice burger,Restaurants,5000,3500,2025-12-31,https://shop-a.com,burger|chips\n\nJSON example:\n[\n  {"merchantName":"Shop A","city":"Lagos","imageUrl":"https://res.cloudinary.com/.../a.jpg","category":"Restaurants","oldPrice":5000,"newPrice":3500,"expiresAt":"2025-12-31","deepLink":"https://shop-a.com","tags":["burger","chips"]}\n]`}
+                />
+                <p className="text-xs text-slate-500 mt-2">Preview: {bulkPreviewCount} items detected</p>
+              </div>
+
+              {bulkError && (
+                <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-red-700 text-sm">{bulkError}</div>
+              )}
+              {bulkSuccess && (
+                <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-green-700 text-sm">{bulkSuccess}</div>
+              )}
+
+              <div className="flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  className="rounded-lg bg-slate-200 text-slate-700 px-4 py-2 font-medium hover:bg-slate-300 transition-all duration-200"
+                  onClick={() => { setBulkText(""); setBulkPreviewCount(0); setBulkError(""); setBulkSuccess(""); }}
+                >
+                  Clear
+                </button>
+                <button
+                  type="button"
+                  disabled={bulkSubmitting}
+                  className="rounded-lg bg-primary text-white px-6 py-2 font-medium hover:brightness-110 transition-all duration-200 disabled:opacity-50"
+                  onClick={async () => {
+                    setBulkSubmitting(true);
+                    setBulkError("");
+                    setBulkSuccess("");
+                    try {
+                      // Parse input
+                      let items = [];
+                      const txt = bulkText.trim();
+                      if (!txt) throw new Error("Paste CSV or JSON first");
+                      if (txt.startsWith("[")) {
+                        const arr = JSON.parse(txt);
+                        if (!Array.isArray(arr)) throw new Error("JSON must be an array");
+                        items = arr;
+                      } else {
+                        const lines = txt.split(/\r?\n/).filter((l) => l.trim().length > 0);
+                        if (lines.length < 2) throw new Error("CSV needs header and at least one row");
+                        const header = lines[0].split(",").map((h) => h.trim());
+                        const idx = (k) => header.findIndex((h) => h.toLowerCase() === k);
+                        const rows = lines.slice(1);
+                        items = rows.map((line) => {
+                          const cols = line.split(",");
+                          const get = (k) => {
+                            const i = idx(k);
+                            if (i === -1) return undefined;
+                            return (cols[i] || "").trim();
+                          };
+                          const tagsRaw = get("tags");
+                          return {
+                            merchantName: get("merchantname") || get("merchantName"),
+                            city: get("city"),
+                            imageUrl: get("imageurl") || get("imageUrl"),
+                            description: get("description"),
+                            category: get("category"),
+                            oldPrice: get("oldprice") || get("oldPrice"),
+                            newPrice: get("newprice") || get("newPrice"),
+                            expiresAt: get("expiresat") || get("expiresAt"),
+                            deepLink: get("deeplink") || get("deepLink"),
+                            tags: tagsRaw ? tagsRaw.split("|").map((t) => t.trim()).filter(Boolean) : [],
+                          };
+                        });
+                      }
+
+                      // Send to bulk endpoint
+                      const res = await fetch(`${API_BASE}/admin/deals/bulk`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                        body: JSON.stringify({ deals: items }),
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.error || "Bulk create failed");
+                      const created = Array.isArray(data.created) ? data.created : [];
+                      setDeals((d) => [...created, ...d]);
+                      const errs = Array.isArray(data.errors) ? data.errors.length : 0;
+                      setBulkSuccess(`Created ${data.createdCount || created.length} deals. ${errs ? `${errs} rows skipped.` : ""}`);
+                      setBulkText("");
+                      setBulkPreviewCount(0);
+                    } catch (e) {
+                      setBulkError(e.message || "Bulk upload failed");
+                    } finally {
+                      setBulkSubmitting(false);
+                    }
+                  }}
+                >
+                  {bulkSubmitting ? "Uploading..." : "Create Deals"}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

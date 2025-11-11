@@ -110,6 +110,89 @@ router.post("/deals", adminAuth, async (req, res) => {
   }
 });
 
+// Bulk create deals (temporary helper for admin)
+router.post("/deals/bulk", adminAuth, async (req, res) => {
+  const prisma = req.prisma;
+  const body = req.body || {};
+  const items = Array.isArray(body.deals)
+    ? body.deals
+    : Array.isArray(body.items)
+      ? body.items
+      : [];
+  if (!items.length) {
+    return res.status(400).json({ error: "Provide an array of deals in 'deals' or 'items'" });
+  }
+  if (items.length > 500) {
+    return res.status(400).json({ error: "Too many items. Max 500 per request." });
+  }
+
+  // Normalize and validate each item
+  const toCreate = [];
+  const errors = [];
+
+  const autoDiscount = (oldPrice, newPrice) => {
+    if (oldPrice === undefined || newPrice === undefined || oldPrice === null || newPrice === null) return null;
+    const oldP = Number(oldPrice);
+    const newP = Number(newPrice);
+    if (Number.isFinite(oldP) && Number.isFinite(newP) && oldP > 0 && newP >= 0 && newP <= oldP) {
+      return Math.round(((oldP - newP) / oldP) * 100);
+    }
+    return null;
+  };
+
+  items.forEach((raw, idx) => {
+    const data = raw || {};
+    const merchantName = String(data.merchantName || "").trim();
+    const city = String(data.city || "").trim();
+    const imageUrl = String(data.imageUrl || "").trim();
+    const titleCandidate = String((data.title ?? data.description ?? merchantName) || "").trim();
+    if (!merchantName || !city || !imageUrl || !titleCandidate) {
+      errors.push({ index: idx, error: "Missing required fields (merchantName, city, imageUrl, title/description)" });
+      return;
+    }
+    const oldPrice = data.oldPrice ?? null;
+    const newPrice = data.newPrice ?? null;
+    const discountPct = data.discountPct ?? autoDiscount(oldPrice, newPrice);
+    const expiresAt = data.expiresAt ? new Date(data.expiresAt) : null;
+    const tags = Array.isArray(data.tags)
+      ? data.tags
+      : typeof data.tags === "string" && data.tags.length
+        ? data.tags.split("|").map((t) => t.trim()).filter(Boolean)
+        : [];
+
+    toCreate.push({
+      title: titleCandidate,
+      description: data.description || null,
+      merchantName,
+      city,
+      category: data.category || null,
+      tags,
+      imageUrl,
+      oldPrice,
+      newPrice,
+      discountPct,
+      expiresAt,
+      isActive: data.isActive !== undefined ? !!data.isActive : true,
+      deepLink: data.deepLink || null,
+    });
+  });
+
+  if (!toCreate.length) {
+    return res.status(400).json({ error: "No valid items to create", errors });
+  }
+
+  try {
+    // Use transaction of individual creates so we can return created records
+    const created = await prisma.$transaction(
+      toCreate.map((data) => prisma.deal.create({ data }))
+    );
+    res.status(201).json({ createdCount: created.length, errors, created });
+  } catch (e) {
+    console.error("Bulk create error", e);
+    res.status(500).json({ error: "Failed to bulk create deals" });
+  }
+});
+
 // List all deals (admin)
 router.get("/deals", adminAuth, async (req, res) => {
   const prisma = req.prisma;
