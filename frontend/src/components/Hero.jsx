@@ -6,38 +6,69 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 const slides = [
+  // {
+  //   // First slide as a 6-image collage to highlight major categories
+  //   // Ensure all entries are valid public paths (start with '/')
+  //   images: [
+  //     "/enter.webp",
+  //     "/vegetable.webp",
+  //     "/fashionhero.webp",
+  //     "/spa22.webp",
+  //     "/hotel1.webp",
+  //     "/air1.jpg",
+  //   ],
+  //   alt: "All Discounts & Deals in Nigeria in One Place.",
+  //   headline: "All Discounts & Deals in Nigeria in One Place.",
+  //   sub: "Search and claim the best offers before they expire.",
+  // },
+  // {
+  //   src: "/supermarket.webp",
+  //   alt: "Restaurants Deals",
+  //   headline: "Buy More, Spend Less",
+  //   sub: "Get deals from supermarkets near you",
+  // },
+  // {
+  //   src: "/fashion.webp",
+  //   alt: "Beauty & Spas",
+  //   headline: "Glow for Less",
+  //   sub: "Get discounts from top fashion brands",
+  // },
+  // {
+  //   src: "/Hotels.webp",
+  //   alt: "Hotels & Dining",
+  //   headline: "Save on Hotels",
+  //   sub: "Enjoy the best deals on hotels",
+  // },
+  // designed image
   {
-    // First slide as a 6-image collage to highlight major categories
-    // Ensure all entries are valid public paths (start with '/')
-    images: [
-      "/enter.webp",
-      "/vegetable.webp",
-      "/fashionhero.webp",
-      "/spa22.webp",
-      "/hotel1.webp",
-      "/air1.jpg",
-    ],
-    alt: "All Discounts & Deals in Nigeria in One Place.",
-    headline: "All Discounts & Deals in Nigeria in One Place.",
-    sub: "Search and claim the best offers before they expire.",
-  },
-  {
-    src: "/supermarket.webp",
-    alt: "Restaurants Deals",
-    headline: "Buy More, Spend Less",
-    sub: "Get deals from supermarkets near you",
-  },
-  {
-    src: "/fashion.webp",
-    alt: "Beauty & Spas",
-    headline: "Glow for Less",
-    sub: "Get discounts from top fashion brands",
-  },
-  {
-    src: "/Hotels.webp",
+    src: "/v1.png",
     alt: "Hotels & Dining",
-    headline: "Save on Hotels",
-    sub: "Enjoy the best deals on hotels",
+    headline: "",
+    sub: "",
+  },
+  {
+    src: "/v2.png",
+    alt: "Hotels & Dining",
+    headline: "",
+    sub: "",
+  },
+  {
+    src: "/v3.png",
+    alt: "Hotels & Dining",
+    headline: "",
+    sub: "",
+  },
+  {
+    src: "/v4.png",
+    alt: "Hotels & Dining",
+    headline: "",
+    sub: "",
+  },
+  {
+    src: "/v5.png",
+    alt: "Hotels & Dining",
+    headline: "",
+    sub: "",
   },
 ];
 
@@ -103,8 +134,9 @@ export default function Hero() {
           />
         )}
 
+        {/* bg-black/40  for opacity */}
         {/* Overlay without blur, allow clicks to pass through */}
-        <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+        <div className="absolute inset-0 bg-black/0 pointer-events-none" />
 
         {/* Content */}
         <div className="relative z-10 h-full flex items-center">
@@ -130,14 +162,11 @@ export default function Hero() {
 
             {/* Static CTA buttons (moved outside the animated text block so they don't animate) */}
             <div className="mt-8 sm:mt-10 flex gap-3">
-              <Link
+              {/* <Link
                 href="#hot-deals"
                 className="rounded-md bg-primary text-white px-5 py-3 text-base sm:text-lg hover:brightness-110 transition"
               >
                 Find Deals
-              </Link>
-              {/* <Link href="/how-it-works" className="rounded-md border border-white/30 text-white px-4 py-2 text-sm sm:text-base hover:bg-white/10 transition">
-                How it works
               </Link> */}
             </div>
           </div>
