@@ -9,9 +9,6 @@ const { extractProductFromUrl } = require("../utils/extractProduct");
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
-// Temporary default expiry date (16 Dec 2025). Remove or change later.
-const DEFAULT_EXPIRES_AT = new Date(Date.UTC(2025, 11, 16, 0, 0, 0));
-
 // Helper: ensure descriptions are a single sentence for card UI
 function oneSentence(desc, maxChars = 180) {
   if (!desc) return null;
@@ -116,8 +113,7 @@ router.post("/deals", adminAuth, async (req, res) => {
       oldPrice: data.oldPrice ?? null,
       newPrice: data.newPrice ?? null,
       discountPct,
-      // Use provided expiresAt if present; otherwise default to 16 Dec 2025
-      expiresAt: data.expiresAt ? new Date(data.expiresAt) : DEFAULT_EXPIRES_AT,
+      expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
       isActive: data.isActive !== undefined ? !!data.isActive : true,
       deepLink: data.deepLink || null,
     } });

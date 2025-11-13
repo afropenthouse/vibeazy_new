@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import DiscountCard from "@/components/DiscountCard";
 
 // NOTE: allowed categories (value = internal category, label = visible text)
@@ -546,7 +547,9 @@ function mapApiDealToCard(d) {
   return {
     id: d.id,
     category: d.category || "Restaurants",
-    title: d.merchantName || d.title || "Untitled",
+    // Keep merchantName separate from title so UI can show both
+    merchantName: d.merchantName || d.merchant_name || d.title || "",
+    title: d.title || "",
     description: d.description || "",
     place: d.city || "",
     image: d.imageUrl || "/placeholder.png",
@@ -568,36 +571,26 @@ export default function SearchFilter() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedCity, setSelectedCity] = useState("All");
   const [apiDeals, setApiDeals] = useState([]);
+  const searchParams = useSearchParams();
 
   // Read initial filters from URL (?q=...&category=...&city=...)
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      // Read search terms from header which uses `search` param; fall back to `q`
-      const q = params.get("search") || params.get("q") || "";
-      const cat = params.get("category") || "All";
-      const city = params.get("city") || "All";
-      const rafId = window.requestAnimationFrame(() => {
-        if (q) setQuery(q);
-        // Accept either the option value (e.g. "Restaurants") or the visible label
-        // (e.g. "Food & Restaurants") in the URL. Map labels to values so filtering
-        // works regardless of which form was used to generate the link.
-        if (cat) {
-          const byValue = CATEGORY_OPTIONS.find((c) => c.value === cat);
-          const byLabel = CATEGORY_OPTIONS.find((c) => c.label === cat);
-          if (byValue) setSelectedCategory(byValue.value);
-          else if (byLabel) setSelectedCategory(byLabel.value);
-          else setSelectedCategory(cat);
-        }
-        if (city) setSelectedCity(city);
-      });
-      return () => {
-        window.cancelAnimationFrame(rafId);
-      };
+    // React to URL changes triggered by category nav links
+    const q = searchParams.get("search") || searchParams.get("q") || "";
+    const cat = searchParams.get("category") || "All";
+    const city = searchParams.get("city") || "All";
+    if (q !== undefined) setQuery(q);
+    if (city !== undefined) setSelectedCity(city);
+    if (cat !== undefined) {
+      const byValue = CATEGORY_OPTIONS.find((c) => c.value === cat);
+      const byLabel = CATEGORY_OPTIONS.find((c) => c.label === cat);
+      if (byValue) setSelectedCategory(byValue.value);
+      else if (byLabel) setSelectedCategory(byLabel.value);
+      else setSelectedCategory(cat);
     }
-  }, []);
+  }, [searchParams]);
   // Visible items control for "See more" behavior
-  const INITIAL_VISIBLE = 6;
+  const INITIAL_VISIBLE = 80;
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
 
   // Fetch public deals feed

@@ -41,6 +41,7 @@ export default function AdminDealsPage() {
   const [urlSubmitting, setUrlSubmitting] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [currentImageUrl, setCurrentImageUrl] = useState("");
+  const [imagePreviewUrl, setImagePreviewUrl] = useState("");
   // Delete confirmation modal state
 
   // Helper: sanitize pasted input to avoid hidden BOM/smart quotes causing JSON.parse issues
@@ -160,6 +161,19 @@ export default function AdminDealsPage() {
     const file = e.target.files?.[0] || null;
     setForm((f) => ({ ...f, imageFile: file }));
   }
+
+  useEffect(() => {
+    // Generate a temporary preview URL when a file is selected
+    if (form.imageFile) {
+      const url = URL.createObjectURL(form.imageFile);
+      setImagePreviewUrl(url);
+      return () => {
+        URL.revokeObjectURL(url);
+      };
+    } else {
+      setImagePreviewUrl("");
+    }
+  }, [form.imageFile]);
 
   async function handleCreate(e) {
     e.preventDefault();
@@ -535,23 +549,35 @@ export default function AdminDealsPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">Deal Image *</label>
-                    <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-primary/50 transition-all duration-200">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFile}
-                        className="hidden"
-                        id="image-upload"
-                      />
-                      <label htmlFor="image-upload" className="cursor-pointer">
-                        <div className="flex flex-col items-center">
-                          <span className="text-4xl mb-2">📷</span>
-                          <p className="text-sm text-slate-600">
-                            {form.imageFile ? form.imageFile.name : "Click to upload image"}
-                          </p>
-                          <p className="text-xs text-slate-500 mt-1">PNG, JPG, WEBP up to 10MB</p>
-                        </div>
-                      </label>
+                    <div className="border-2 border-dashed border-slate-300 rounded-lg p-0 overflow-hidden">
+                      {/* Preview area */}
+                      <div className="w-full h-40 bg-slate-50 flex items-center justify-center">
+                        {imagePreviewUrl ? (
+                          <img src={imagePreviewUrl} alt="Selected preview" className="w-full h-40 object-cover" />
+                        ) : currentImageUrl ? (
+                          <img src={currentImageUrl} alt="Current image" className="w-full h-40 object-cover" />
+                        ) : (
+                          <div className="text-slate-400 text-sm">No image selected</div>
+                        )}
+                      </div>
+                      <div className="p-6 text-center border-t border-slate-200">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFile}
+                          className="hidden"
+                          id="image-upload"
+                        />
+                        <label htmlFor="image-upload" className="cursor-pointer">
+                          <div className="flex flex-col items-center">
+                            <span className="text-4xl mb-2">📷</span>
+                            <p className="text-sm text-slate-600">
+                              {form.imageFile ? form.imageFile.name : "Click to upload image"}
+                            </p>
+                            <p className="text-xs text-slate-500 mt-1">PNG, JPG, WEBP up to 10MB</p>
+                          </div>
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </div>

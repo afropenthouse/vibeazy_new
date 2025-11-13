@@ -45,10 +45,21 @@ export default function CategoriesNav() {
   }, [fetchCats]);
 
   return (
-    <div className="w-full bg-background border-b border-foreground/10 overflow-x-hidden">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <nav className="flex items-center justify-between gap-3 flex-nowrap py-3" aria-label="Top categories">
-          {(cats.length ? cats : [
+    <div className="w-full bg-background border-b border-foreground/10 sticky top-20 z-40">
+      <div className="mx-auto w-[90%] px-4 sm:px-6 lg:px-8">
+        <nav className="relative py-3" aria-label="Top categories">
+          <div className="flex items-center gap-3 overflow-x-auto flex-nowrap scrollbar-hide snap-x snap-mandatory sm:overflow-visible sm:flex-wrap sm:justify-evenly">
+            {/* All option */}
+            <Link
+              key="all"
+              href="/?category=All#hot-deals"
+              className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-foreground/90 hover:text-primary transition-colors whitespace-nowrap snap-start"
+            >
+              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-foreground/5">🏷️</span>
+              <span>All</span>
+            </Link>
+
+            {(cats.length ? cats : [
             { id: -1, name: "Food & Restaurants" },
             { id: -2, name: "Fashion & Clothing" },
             { id: -3, name: "Furniture & Home" },
@@ -58,12 +69,12 @@ export default function CategoriesNav() {
             { id: -7, name: "Entertainment & Events" },
           ]).map((c) => {
             const label = c.name;
-            const href = `/?category=${encodeURIComponent(label)}`;
+            const href = `/?category=${encodeURIComponent(label)}#hot-deals`;
             return (
               <Link
                 key={c.id ?? label}
                 href={href}
-                className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-foreground/80 hover:text-primary transition-colors whitespace-nowrap"
+                className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-foreground/80 hover:text-primary transition-colors whitespace-nowrap snap-start"
               >
                 <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-foreground/5">
                   {iconFor(label)}
@@ -72,6 +83,7 @@ export default function CategoriesNav() {
               </Link>
             );
           })}
+          </div>
         </nav>
       </div>
     </div>

@@ -11,7 +11,8 @@ function mapApiDealToCard(d) {
   return {
     id: d.id,
     category: d.category || "Restaurants",
-    title: d.merchantName || d.title || "Untitled",
+    merchantName: d.merchantName || d.merchant_name || d.title || "",
+    title: d.title || "",
     description: d.description || "",
     place: d.city || "",
     image: d.imageUrl || "/placeholder.png",

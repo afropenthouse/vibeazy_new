@@ -1,9 +1,10 @@
 "use client";
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import Hero from "@/components/Hero";
 import SearchFilter from "@/components/SearchFilter";
+import Highlights from "@/components/Highlights";
 
 export default function HomePage() {
   const { isAuthenticated, user } = useAuth();
@@ -14,14 +15,7 @@ export default function HomePage() {
     return params.get("welcome") === "1" && isAuthenticated && !welcomeClosed;
   }, [isAuthenticated, welcomeClosed]);
 
-  // On initial load, show the deals section like your screenshot
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const el = document.getElementById("hot-deals");
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, []);
+  // Removed auto-scroll so carousels under Hero remain visible on load
 
   const closeWelcome = () => {
     setWelcomeClosed(true);
@@ -34,6 +28,8 @@ export default function HomePage() {
   return (
     <main>
       <Hero />
+      {/* Highlights carousels */}
+      <Highlights />
 
       {/* Search + Filter + List */}
       <SearchFilter />

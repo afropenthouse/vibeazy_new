@@ -52,7 +52,7 @@ export default function DiscountCard({ item, compact = false }) {
     "Bite Size": "https://vibeazy-new.vercel.app/",
   };
   
-  const offerUrl = item.url || OFFER_URLS[item.title];
+  const offerUrl = item.url || OFFER_URLS[item.merchantName || item.title];
 
   // Initialize with deterministic value (pure at render). Defer Date.now to effect.
   const [expiresAt, setExpiresAt] = useState(() => {
@@ -126,10 +126,10 @@ export default function DiscountCard({ item, compact = false }) {
       <div className="relative overflow-hidden">
         <Image 
           src={item.image} 
-          alt={item.title} 
+          alt={item.description || item.merchantName || item.title} 
           width={800} 
           height={600} 
-          className={(compact ? "h-32" : "h-48") + " w-full object-cover transition-transform duration-500 group-hover:scale-105"} 
+          className={(compact ? "h-64" : "h-56") + " w-full object-cover transition-transform duration-500 group-hover:scale-105"} 
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60" />
         
@@ -217,8 +217,13 @@ export default function DiscountCard({ item, compact = false }) {
           </div>
         </div>
 
-        {/* Swapped: show merchant title below as secondary text */}
-        <p className={(compact ? "text-xs" : "text-sm") + " text-foreground/70 mb-4 line-clamp-2 flex-1"}>{item.title}</p>
+        {/* Show merchant name then title as secondary text */}
+        {item.merchantName && (
+          <p className={(compact ? "text-xs" : "text-sm") + " text-foreground/70 line-clamp-2"}>{item.merchantName}</p>
+        )}
+        {item.title && (item.title.trim() !== (item.merchantName || "").trim()) && (
+          <p className={(compact ? "text-xs" : "text-sm") + " text-foreground/70 mb-4 line-clamp-2 flex-1"}>{item.title}</p>
+        )}
 
         {/* Price and Action Section */}
         {(item.priceCurrent || item.priceOriginal) && (
@@ -255,7 +260,7 @@ export default function DiscountCard({ item, compact = false }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     className={(compact ? "px-3 py-2 text-xs" : "px-4 py-2.5 text-sm") + " inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary/90 text-white hover:shadow-lg transition-all duration-200 hover:scale-105 font-semibold"}
-                    aria-label={`Get offer from ${item.title}`}
+                    aria-label={`Get offer from ${item.merchantName || item.title}`}
                   >
                     <span>Get Offer</span>
                     <svg className={(compact ? "w-3.5 h-3.5" : "w-4 h-4")} fill="none" stroke="currentColor" viewBox="0 0 24 24">
