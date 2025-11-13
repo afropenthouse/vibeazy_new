@@ -6,7 +6,7 @@ import { useSavedDeals } from "@/contexts/SavedDealsContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 
-export default function DiscountCard({ item }) {
+export default function DiscountCard({ item, compact = false }) {
   const { isSaved, toggle } = useSavedDeals();
   const { isAuthenticated, token } = useAuth();
   const router = useRouter();
@@ -120,7 +120,7 @@ export default function DiscountCard({ item }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.35 }}
-      className="discount-card group rounded-2xl border border-foreground/10 overflow-hidden bg-background shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col h-full hover:-translate-y-1"
+      className={`discount-card group rounded-2xl border border-foreground/10 overflow-hidden bg-background shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col h-full hover:-translate-y-1 ${compact ? "" : ""}`}
     >
       {/* Image Section */}
       <div className="relative overflow-hidden">
@@ -129,7 +129,7 @@ export default function DiscountCard({ item }) {
           alt={item.title} 
           width={800} 
           height={600} 
-          className="h-48 w-full object-cover transition-transform duration-500 group-hover:scale-105" 
+          className={(compact ? "h-32" : "h-48") + " w-full object-cover transition-transform duration-500 group-hover:scale-105"} 
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60" />
         
@@ -187,16 +187,16 @@ export default function DiscountCard({ item }) {
       </div>
 
       {/* Content Section */}
-      <div className="p-5 flex-1 flex flex-col">
+      <div className={(compact ? "p-3" : "p-5") + " flex-1 flex flex-col"}>
         {/* Title, Place, and Expiry badge */}
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <button
             onClick={() => router.push(`/deal/${encodeURIComponent(item.id)}`)}
-            className="text-left font-bold text-lg text-foreground group-hover:text-primary transition-colors line-clamp-1"
-            aria-label={`View ${item.title}`}
+            className={(compact ? "text-sm" : "text-lg") + " text-left font-bold text-foreground group-hover:text-primary transition-colors line-clamp-1"}
+            aria-label={`View ${item.description}`}
           >
-            {item.title}
+            {item.description}
             </button>
             {item.place && (
               <div className="flex items-center gap-1 mt-1">
@@ -204,43 +204,43 @@ export default function DiscountCard({ item }) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                <p className="text-xs text-foreground/60">{item.place}</p>
+                <p className={(compact ? "text-[10px]" : "text-xs") + " text-foreground/60"}>{item.place}</p>
               </div>
             )}
           </div>
           {/* Expiry badge in white space */}
           <div className="shrink-0">
-            <div className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs ${getExpiryBadgeClasses()}`} aria-live="polite">
+            <div className={`inline-flex items-center gap-1 rounded-full ${compact ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-xs"} ${getExpiryBadgeClasses()}`} aria-live="polite">
               <span className="opacity-80">Expires</span>
               <span className="font-mono font-semibold">{timeLeft}</span>
             </div>
           </div>
         </div>
 
-        {/* Description */}
-        <p className="text-sm text-foreground/70 mb-4 line-clamp-2 flex-1">{item.description}</p>
+        {/* Swapped: show merchant title below as secondary text */}
+        <p className={(compact ? "text-xs" : "text-sm") + " text-foreground/70 mb-4 line-clamp-2 flex-1"}>{item.title}</p>
 
         {/* Price and Action Section */}
         {(item.priceCurrent || item.priceOriginal) && (
-          <div className="mt-auto pt-4 border-t border-foreground/5">
+          <div className={(compact ? "pt-3" : "pt-4") + " mt-auto border-t border-foreground/5"}>
             <div className="flex items-center justify-between">
               {/* Price Display */}
               <div className="flex flex-col">
                 <div className="flex items-baseline gap-2">
                   {typeof displayCurrent === "number" && (
-                    <span className="text-xl font-bold text-primary price-current">
+                    <span className={(compact ? "text-base" : "text-xl") + " font-bold text-primary price-current"}>
                       {formatNaira(displayCurrent)}
                     </span>
                   )}
                   {typeof displayOriginal === "number" && displayOriginal > displayCurrent && (
-                    <span className="text-sm text-foreground/40 line-through price-original">
+                    <span className={(compact ? "text-xs" : "text-sm") + " text-foreground/40 line-through price-original"}>
                       {formatNaira(displayOriginal)}
                     </span>
                   )}
                 </div>
                 {typeof displayOriginal === "number" && displayOriginal > displayCurrent && (
                   <div className="flex items-center gap-1 mt-1">
-                    <span className="text-xs text-green-600 font-medium">
+                    <span className={(compact ? "text-[11px]" : "text-xs") + " text-green-600 font-medium"}>
                       Save {formatNaira(displayOriginal - displayCurrent)}
                     </span>
                   </div>
@@ -254,18 +254,18 @@ export default function DiscountCard({ item }) {
                     href={offerUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary/90 text-white px-4 py-2.5 hover:shadow-lg transition-all duration-200 hover:scale-105 font-semibold text-sm"
+                    className={(compact ? "px-3 py-2 text-xs" : "px-4 py-2.5 text-sm") + " inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary/90 text-white hover:shadow-lg transition-all duration-200 hover:scale-105 font-semibold"}
                     aria-label={`Get offer from ${item.title}`}
                   >
                     <span>Get Offer</span>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className={(compact ? "w-3.5 h-3.5" : "w-4 h-4")} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                     </svg>
                   </a>
                 ) : (
                   <button
                     disabled
-                    className="inline-flex items-center rounded-xl bg-primary/60 text-white px-4 py-2.5 cursor-not-allowed font-semibold text-sm"
+                    className={(compact ? "px-3 py-2 text-xs" : "px-4 py-2.5 text-sm") + " inline-flex items-center rounded-xl bg-primary/60 text-white cursor-not-allowed font-semibold"}
                   >
                     Get Offer
                   </button>
