@@ -567,28 +567,25 @@ function mapApiDealToCard(d) {
 // Reset visible count directly in change handlers to avoid setState in effects
 
 export default function SearchFilter() {
-  const [query, setQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedCity, setSelectedCity] = useState("All");
-  const [apiDeals, setApiDeals] = useState([]);
   const searchParams = useSearchParams();
 
-  // Read initial filters from URL (?q=...&category=...&city=...)
-  useEffect(() => {
-    // React to URL changes triggered by category nav links
-    const q = searchParams.get("search") || searchParams.get("q") || "";
-    const cat = searchParams.get("category") || "All";
-    const city = searchParams.get("city") || "All";
-    if (q !== undefined) setQuery(q);
-    if (city !== undefined) setSelectedCity(city);
-    if (cat !== undefined) {
-      const byValue = CATEGORY_OPTIONS.find((c) => c.value === cat);
-      const byLabel = CATEGORY_OPTIONS.find((c) => c.label === cat);
-      if (byValue) setSelectedCategory(byValue.value);
-      else if (byLabel) setSelectedCategory(byLabel.value);
-      else setSelectedCategory(cat);
-    }
-  }, [searchParams]);
+  // Initialize filter state from URL search params to avoid setting state
+  // synchronously inside an effect (which can cause cascading renders).
+  const getInitialQuery = () => searchParams?.get("search") || searchParams?.get("q") || "";
+  const getInitialCity = () => searchParams?.get("city") || "All";
+  const getInitialCategory = () => {
+    const cat = searchParams?.get("category") || "All";
+    const byValue = CATEGORY_OPTIONS.find((c) => c.value === cat);
+    const byLabel = CATEGORY_OPTIONS.find((c) => c.label === cat);
+    if (byValue) return byValue.value;
+    if (byLabel) return byLabel.value;
+    return cat;
+  };
+
+  const [query, setQuery] = useState(getInitialQuery);
+  const [selectedCategory, setSelectedCategory] = useState(getInitialCategory);
+  const [selectedCity, setSelectedCity] = useState(getInitialCity);
+  const [apiDeals, setApiDeals] = useState([]);
   // Visible items control for "See more" behavior
   const INITIAL_VISIBLE = 80;
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);

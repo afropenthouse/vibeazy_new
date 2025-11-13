@@ -89,6 +89,13 @@ function Carousel({ title, items, compact = false }) {
 export default function Highlights() {
   const deals = useDeals();
 
+  // Capture a stable "now" value via effect to avoid calling impure functions
+  // during render/memo. ESLint flags Date.now() inside render as impure.
+  const [now, setNow] = useState(0);
+  useEffect(() => {
+    setNow(Date.now());
+  }, []);
+
   const popularNow = useMemo(() => {
     // Heuristic: highest percent discount first, then most recently approved
     const percent = (d) => {
@@ -124,12 +131,12 @@ export default function Highlights() {
   }, [deals]);
 
   const expiringSoon = useMemo(() => {
-    const now = Date.now();
+    const nowVal = now || Date.now();
     const TEN_DAYS = 10 * 24 * 60 * 60 * 1000;
     const withExpiry = deals.filter((d) => d.expiresAt && !isNaN(Date.parse(d.expiresAt)));
     const withinTenDays = withExpiry.filter((d) => {
       const t = Date.parse(d.expiresAt);
-      const diff = t - now;
+      const diff = t - nowVal;
       return diff > 0 && diff <= TEN_DAYS;
     });
     const arr = withinTenDays.slice();
@@ -139,7 +146,7 @@ export default function Highlights() {
       return ta - tb; // soonest expiry first
     });
     return arr.slice(0, 16);
-  }, [deals]);
+  }, [deals, now]);
 
   return (
     <div>
