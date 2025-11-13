@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import Hero from "@/components/Hero";
@@ -32,7 +32,9 @@ export default function HomePage() {
       <Highlights />
 
       {/* Search + Filter + List */}
-      <SearchFilter />
+      <Suspense fallback={null}>
+        <SearchFilter />
+      </Suspense>
 
       {/* Welcome modal overlay */}
       {showWelcome && (
