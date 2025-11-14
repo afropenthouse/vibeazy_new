@@ -1,5 +1,6 @@
 "use client";
 import Image from "next/image";
+import { Suspense } from "react";
 import { usePathname } from "next/navigation";
 import AnnouncementBar from "@/components/AnnouncementBar";
 import Header from "@/components/Header";
@@ -32,7 +33,9 @@ export default function SiteChrome({ children }) {
     <>
       <AnnouncementBar />
       <Header />
-      <CategoriesNav />
+      <Suspense fallback={null}>
+        <CategoriesNav />
+      </Suspense>
       {children}
       <Footer />
       <ScrollButtons />
