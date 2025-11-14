@@ -33,19 +33,20 @@ const slides = [
   //   headline: "Glow for Less",
   //   sub: "Get discounts from top fashion brands",
   // },
-  // {
-  //   src: "/Hotels.webp",
-  //   alt: "Hotels & Dining",
-  //   headline: "Save on Hotels",
-  //   sub: "Enjoy the best deals on hotels",
-  // },
   // designed image
   {
-    src: "/v1.png",
+    src: "/discount.png",
     alt: "Hotels & Dining",
     headline: "",
     sub: "",
   },
+  
+  // {
+  //   src: "/v1.png",
+  //   alt: "Hotels & Dining",
+  //   headline: "",
+  //   sub: "",
+  // },
   {
     src: "/v2.png",
     alt: "Hotels & Dining",
@@ -100,9 +101,15 @@ export default function Hero() {
     );
   };
 
+  // For the discount slide (first slide in array), use a shorter height on mobile
+  const slideHeightClass =
+    index === 0
+      ? "relative h-[28vh] sm:h-[55vh] lg:h-[60vh]"
+      : "relative h-[45vh] sm:h-[55vh] lg:h-[60vh]";
+
   return (
     <section className="relative overflow-hidden">
-      <div className="relative h-[45vh] sm:h-[55vh] lg:h-[60vh]">
+      <div className={slideHeightClass}>
         {/* Background image or collage for first slide */}
         {slides[index].images ? (
           <div className="absolute inset-0 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-0 p-0">
@@ -130,7 +137,7 @@ export default function Hero() {
             src={slides[index].src}
             alt={slides[index].alt}
             fill
-            className="object-cover"
+            className={index === 0 ? "object-contain object-center" : "object-cover"}
             priority
           />
         )}

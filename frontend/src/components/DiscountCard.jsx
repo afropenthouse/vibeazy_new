@@ -188,35 +188,34 @@ export default function DiscountCard({ item, compact = false }) {
 
       {/* Content Section */}
       <div className={(compact ? "p-3" : "p-5") + " flex-1 flex flex-col"}>
-        {/* Title and optional Expiry badge (hidden on compact) */}
+        {/* Title and optional location */}
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <button
             onClick={() => router.push(`/deal/${encodeURIComponent(item.id)}`)}
-            className={(compact ? "text-sm line-clamp-2" : "text-lg line-clamp-1") + " text-left font-bold text-foreground group-hover:text-primary transition-colors"}
+            className={(compact ? "text-sm" : "text-lg") + " block w-full truncate text-left font-bold text-foreground group-hover:text-primary transition-colors"}
             aria-label={`View ${compact ? (item.title || item.description) : item.description}`}
           >
             {compact ? (item.title || item.description) : item.description}
             </button>
-            {item.place && (
-              <div className="flex items-center gap-1 mt-1">
-                <svg className="w-3 h-3 text-foreground/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <p className={(compact ? "text-[10px]" : "text-xs") + " text-foreground/60"}>{item.place}</p>
+            {!compact && (
+              <div className={(item.place ? "justify-between" : "justify-end") + " flex items-center mt-1"}>
+                {item.place && (
+                  <div className="flex items-center gap-1">
+                    <svg className="w-3 h-3 text-foreground/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <p className="text-xs text-foreground/60">{item.place}</p>
+                  </div>
+                )}
+                <div className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] ${getExpiryBadgeClasses()}`} aria-live="polite">
+                  <span className="opacity-80">Expires</span>
+                  <span className="font-mono font-semibold">{timeLeft}</span>
+                </div>
               </div>
             )}
           </div>
-          {/* Expiry badge shown only on non-compact cards */}
-          {!compact && (
-            <div className="shrink-0">
-              <div className={`inline-flex items-center gap-1 rounded-full ${compact ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-xs"} ${getExpiryBadgeClasses()}`} aria-live="polite">
-                <span className="opacity-80">Expires</span>
-                <span className="font-mono font-semibold">{timeLeft}</span>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Secondary texts hidden on compact for clarity */}
@@ -226,6 +225,8 @@ export default function DiscountCard({ item, compact = false }) {
         {!compact && item.title && (item.title.trim() !== (item.merchantName || "").trim()) && (
           <p className={(compact ? "text-xs" : "text-sm") + " text-foreground/70 mb-4 line-clamp-2 flex-1"}>{item.title}</p>
         )}
+
+        
 
         {/* Price and Action Section */}
         {!compact && (item.priceCurrent || item.priceOriginal) && (
@@ -254,7 +255,6 @@ export default function DiscountCard({ item, compact = false }) {
                 )}
               </div>
 
-              {/* Action Button */}
               <div className="flex items-center gap-2">
                 {offerUrl ? (
                   <a
