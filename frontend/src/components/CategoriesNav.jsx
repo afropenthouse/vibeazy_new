@@ -4,24 +4,94 @@ import Link from "next/link";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
-function iconFor(name) {
-  const map = {
-    "Food & Restaurants": "🍕",
-    Restaurants: "🍕",
-    "Fashion & Clothing": "👕",
-    Fashion: "👕",
-    "Furniture & Home": "🪑",
-    Furniture: "🪑",
-    "Beauty & Spa": "💅",
-    Beauty: "💅",
-    "Gadgets & Electronics": "💻",
-    Electronics: "💻",
-    "Travel & Hotels": "✈️",
-    Travel: "✈️",
-    "Entertainment & Events": "🎟️",
-    Entertainment: "🎟️",
+// Sleek inline SVG icons (consistent stroke, size, and style)
+function CategoryIcon({ name }) {
+  const common = "w-5 h-5";
+  const strokeProps = {
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.5,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
   };
-  return map[name] || "🏷️";
+  const n = String(name || "").toLowerCase();
+
+  if (n.includes("restaurant") || n.includes("food")) {
+    // Utensils
+    return (
+      <svg className={common} viewBox="0 0 24 24" {...strokeProps}>
+        <path d="M8 3v9"/>
+        <path d="M6 3v9"/>
+        <path d="M10 3v4a4 4 0 0 1-4 4"/>
+        <path d="M14 7h5a2 2 0 0 1 2 2v9"/>
+        <path d="M14 7v10"/>
+      </svg>
+    );
+  }
+  if (n.includes("fashion")) {
+    // T‑shirt
+    return (
+      <svg className={common} viewBox="0 0 24 24" {...strokeProps}>
+        <path d="M9 4l3-2 3 2m-6 0-3 2v12h12V6l-3-2"/>
+      </svg>
+    );
+  }
+  if (n.includes("electronic") || n.includes("gadget")) {
+    // Laptop
+    return (
+      <svg className={common} viewBox="0 0 24 24" {...strokeProps}>
+        <rect x="3" y="5" width="18" height="10" rx="2"/>
+        <path d="M2 19h20"/>
+      </svg>
+    );
+  }
+  if (n.includes("furniture") || n.includes("home")) {
+    // Chair
+    return (
+      <svg className={common} viewBox="0 0 24 24" {...strokeProps}>
+        <path d="M6 12h12"/>
+        <path d="M7 12v6"/>
+        <path d="M17 12v6"/>
+        <path d="M8 8h8a2 2 0 0 1 2 2v2H6v-2a2 2 0 0 1 2-2Z"/>
+      </svg>
+    );
+  }
+  if (n.includes("beauty") || n.includes("spa")) {
+    // Sparkles
+    return (
+      <svg className={common} viewBox="0 0 24 24" {...strokeProps}>
+        <path d="M12 3l2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5Z"/>
+        <path d="M19 4l1 3 3 1-3 1-1 3-1-3-3-1 3-1 1-3Z"/>
+      </svg>
+    );
+  }
+  if (n.includes("travel") || n.includes("hotel") || n.includes("airbnb")) {
+    // Bed
+    return (
+      <svg className={common} viewBox="0 0 24 24" {...strokeProps}>
+        <path d="M3 10h10a4 4 0 0 1 4 4v4"/>
+        <path d="M3 18v-8"/>
+        <path d="M3 14h18"/>
+      </svg>
+    );
+  }
+  if (n.includes("entertainment") || n.includes("event")) {
+    // Ticket
+    return (
+      <svg className={common} viewBox="0 0 24 24" {...strokeProps}>
+        <path d="M4 8h16v8H4z"/>
+        <path d="M8 8v-2m8 2v-2"/>
+        <path d="M8 16v2m8-2v2"/>
+      </svg>
+    );
+  }
+  // Default: Tag (used for "All")
+  return (
+    <svg className={common} viewBox="0 0 24 24" {...strokeProps}>
+      <path d="M7 3h7l6 6-9 9-6-6V3z"/>
+      <circle cx="15.5" cy="8.5" r="1.5"/>
+    </svg>
+  );
 }
 
 export default function CategoriesNav() {
@@ -55,7 +125,7 @@ export default function CategoriesNav() {
               href="/?category=All#hot-deals"
               className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-foreground/90 hover:text-primary transition-colors whitespace-nowrap snap-start"
             >
-              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-foreground/5">🏷️</span>
+              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-foreground/5"><CategoryIcon name="All" /></span>
               <span>All</span>
             </Link>
 
@@ -77,7 +147,7 @@ export default function CategoriesNav() {
                 className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-foreground/80 hover:text-primary transition-colors whitespace-nowrap snap-start"
               >
                 <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-foreground/5">
-                  {iconFor(label)}
+                  <CategoryIcon name={label} />
                 </span>
                 <span>{label}</span>
               </Link>

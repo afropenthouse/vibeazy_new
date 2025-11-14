@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 export default function Header() {
   const { isAuthenticated, user, logout } = useAuth();
@@ -14,17 +15,29 @@ export default function Header() {
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("All");
 
-  // Category dropdown options — include "All" as default
-  const CATEGORY_OPTIONS = [
-    { value: "All", label: "All" },
-    { value: "Restaurants", label: "Food & Restaurants" },
-    { value: "Fashion", label: "Fashion & Clothing" },
-    { value: "Electronics", label: "Gadgets & Electronics" },
-    { value: "Furniture", label: "Furniture & Home" },
-    { value: "Beauty", label: "Beauty & Spa" },
-    { value: "Travel", label: "Travel & Hotels" },
-    { value: "Entertainment", label: "Entertainment & Events" },
-  ];
+  // Categories from backend
+  const [cats, setCats] = useState([]);
+  useEffect(() => {
+    let didCancel = false;
+    async function load() {
+      try {
+        const res = await fetch(`${API_BASE}/admin/public/categories`);
+        const data = await res.json();
+        if (!didCancel && Array.isArray(data.categories)) {
+          setCats(data.categories);
+        }
+      } catch (_) {
+        // ignore; dropdown will be empty
+      }
+    }
+    load();
+    const onUpdate = () => load();
+    window.addEventListener("categoriesUpdated", onUpdate);
+    return () => {
+      didCancel = true;
+      window.removeEventListener("categoriesUpdated", onUpdate);
+    };
+  }, []);
 
   useEffect(() => {
     const onDocClick = (e) => {
@@ -81,16 +94,29 @@ export default function Header() {
               {/* Dropdown panel */}
               {categoryOpen && (
                 <div role="menu" className="absolute right-12 top-full mt-2 w-64 rounded-xl border border-foreground/10 bg-background shadow-xl p-2">
-                  {CATEGORY_OPTIONS.map((opt) => (
+                  {/* Always include "All" option */}
+                  <button
+                    key="all"
+                    type="button"
+                    role="menuitem"
+                    className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-sm hover:bg-foreground/5 ${selectedCategory === "All" ? "text-primary" : "text-foreground"}`}
+                    onClick={() => { setSelectedCategory("All"); setCategoryOpen(false); }}
+                  >
+                    <span>All</span>
+                    {selectedCategory === "All" && (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m5 12 4 4 10-10"/></svg>
+                    )}
+                  </button>
+                  {cats.map((c) => (
                     <button
-                      key={opt.value}
+                      key={c.id ?? c.name}
                       type="button"
                       role="menuitem"
-                      className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-sm hover:bg-foreground/5 ${selectedCategory === opt.value ? "text-primary" : "text-foreground"}`}
-                      onClick={() => { setSelectedCategory(opt.value); setCategoryOpen(false); }}
+                      className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-sm hover:bg-foreground/5 ${selectedCategory === c.name ? "text-primary" : "text-foreground"}`}
+                      onClick={() => { setSelectedCategory(c.name); setCategoryOpen(false); }}
                     >
-                      <span>{opt.label}</span>
-                      {selectedCategory === opt.value && (
+                      <span>{c.name}</span>
+                      {selectedCategory === c.name && (
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m5 12 4 4 10-10"/></svg>
                       )}
                     </button>

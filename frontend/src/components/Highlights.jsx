@@ -73,7 +73,8 @@ function Carousel({ title, items, compact = false }) {
             display: inline-block;
             white-space: nowrap;
             will-change: transform;
-            animation: carousel-marquee 22s linear infinite;
+            /* make marquee slower for better readability */
+            animation: carousel-marquee 70s linear infinite;
           }
           .carousel-track:hover { animation-play-state: paused; }
           @keyframes carousel-marquee {
