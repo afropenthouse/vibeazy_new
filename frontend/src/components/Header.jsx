@@ -11,11 +11,20 @@ export default function Header() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
-  const [cityOpen, setCityOpen] = useState(false);
-  const [selectedCity, setSelectedCity] = useState("All");
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState("All");
 
-  // Location dropdown options — include "All" as default
-  const CITY_OPTIONS = ["All", "Lagos", "Abuja", "Port Harcourt"];
+  // Category dropdown options — include "All" as default
+  const CATEGORY_OPTIONS = [
+    { value: "All", label: "All" },
+    { value: "Restaurants", label: "Food & Restaurants" },
+    { value: "Fashion", label: "Fashion & Clothing" },
+    { value: "Electronics", label: "Gadgets & Electronics" },
+    { value: "Furniture", label: "Furniture & Home" },
+    { value: "Beauty", label: "Beauty & Spa" },
+    { value: "Travel", label: "Travel & Hotels" },
+    { value: "Entertainment", label: "Entertainment & Events" },
+  ];
 
   useEffect(() => {
     const onDocClick = (e) => {
@@ -32,7 +41,7 @@ export default function Header() {
     const term = form.search.value.trim();
     const params = new URLSearchParams();
     if (term) params.set("search", term);
-    if (selectedCity && selectedCity !== "All") params.set("city", selectedCity);
+    if (selectedCategory && selectedCategory !== "All") params.set("category", selectedCategory);
     router.push(`/?${params.toString()}#hot-deals`);
   };
   return (
@@ -52,15 +61,15 @@ export default function Header() {
               <input name="search" placeholder="Search deals" className="flex-1 bg-transparent outline-none text-sm" />
               <span className="h-5 w-px bg-foreground/10" aria-hidden="true" />
 
-              {/* Location dropdown trigger (like Dribbble "Shots") */}
+              {/* Categories dropdown trigger */}
               <button
                 type="button"
                 className="relative inline-flex items-center gap-1 text-sm text-foreground/80 hover:text-foreground"
                 aria-haspopup="menu"
-                aria-expanded={cityOpen}
-                onClick={() => setCityOpen((o) => !o)}
+                aria-expanded={categoryOpen}
+                onClick={() => setCategoryOpen((o) => !o)}
               >
-                <span>{selectedCity}</span>
+                <span>Categories</span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-foreground/60"><path d="m6 9 6 6 6-6"/></svg>
               </button>
 
@@ -70,18 +79,18 @@ export default function Header() {
               </button>
 
               {/* Dropdown panel */}
-              {cityOpen && (
+              {categoryOpen && (
                 <div role="menu" className="absolute right-12 top-full mt-2 w-64 rounded-xl border border-foreground/10 bg-background shadow-xl p-2">
-                  {CITY_OPTIONS.map((city) => (
+                  {CATEGORY_OPTIONS.map((opt) => (
                     <button
-                      key={city}
+                      key={opt.value}
                       type="button"
                       role="menuitem"
-                      className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-sm hover:bg-foreground/5 ${selectedCity === city ? "text-primary" : "text-foreground"}`}
-                      onClick={() => { setSelectedCity(city); setCityOpen(false); }}
+                      className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-sm hover:bg-foreground/5 ${selectedCategory === opt.value ? "text-primary" : "text-foreground"}`}
+                      onClick={() => { setSelectedCategory(opt.value); setCategoryOpen(false); }}
                     >
-                      <span>{city}</span>
-                      {selectedCity === city && (
+                      <span>{opt.label}</span>
+                      {selectedCategory === opt.value && (
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m5 12 4 4 10-10"/></svg>
                       )}
                     </button>
