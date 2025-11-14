@@ -462,8 +462,7 @@ router.get("/users", adminAuth, async (req, res) => {
 // Categories management
 router.get("/categories", adminAuth, async (req, res) => {
   const prisma = req.prisma;
-  // Return categories in creation order so admin and public views match
-  const categories = await prisma.category.findMany({ orderBy: { createdAt: "asc" } });
+  const categories = await prisma.category.findMany({ orderBy: { id: "asc" } });
   res.json({ categories });
 });
 
@@ -513,8 +512,7 @@ router.patch("/categories/:id", adminAuth, async (req, res) => {
 // Public categories
 router.get("/public/categories", async (req, res) => {
   const prisma = req.prisma;
-  // Keep public categories aligned with admin order
-  const categories = await prisma.category.findMany({ orderBy: { createdAt: "asc" } });
+  const categories = await prisma.category.findMany({ orderBy: { id: "asc" } });
   res.json({ categories });
 });
 

@@ -13,13 +13,18 @@ export default function AnnouncementBar() {
       </div>
 
       <style jsx>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&display=swap');
+
         .announce-track {
           display: inline-block;
           white-space: nowrap;
           will-change: transform;
           animation: marquee 14s linear infinite;
+          font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
           font-weight: 600;
           font-size: 0.95rem;
+          letter-spacing: -0.01em;
+          text-rendering: optimizeLegibility;
         }
         .announce-text { display: inline-block; padding-right: 2rem; }
         @keyframes marquee {
