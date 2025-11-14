@@ -129,7 +129,7 @@ export default function DiscountCard({ item, compact = false }) {
           alt={item.description || item.merchantName || item.title} 
           width={800} 
           height={600} 
-          className={(compact ? "h-64" : "h-56") + " w-full object-cover transition-transform duration-500 group-hover:scale-105"} 
+          className={(compact ? "h-44" : "h-56") + " w-full object-cover transition-transform duration-500 group-hover:scale-105"} 
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60" />
         
@@ -188,15 +188,15 @@ export default function DiscountCard({ item, compact = false }) {
 
       {/* Content Section */}
       <div className={(compact ? "p-3" : "p-5") + " flex-1 flex flex-col"}>
-        {/* Title, Place, and Expiry badge */}
+        {/* Title and optional Expiry badge (hidden on compact) */}
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <button
             onClick={() => router.push(`/deal/${encodeURIComponent(item.id)}`)}
-            className={(compact ? "text-sm" : "text-lg") + " text-left font-bold text-foreground group-hover:text-primary transition-colors line-clamp-1"}
-            aria-label={`View ${item.description}`}
+            className={(compact ? "text-sm line-clamp-2" : "text-lg line-clamp-1") + " text-left font-bold text-foreground group-hover:text-primary transition-colors"}
+            aria-label={`View ${compact ? (item.title || item.description) : item.description}`}
           >
-            {item.description}
+            {compact ? (item.title || item.description) : item.description}
             </button>
             {item.place && (
               <div className="flex items-center gap-1 mt-1">
@@ -208,25 +208,27 @@ export default function DiscountCard({ item, compact = false }) {
               </div>
             )}
           </div>
-          {/* Expiry badge in white space */}
-          <div className="shrink-0">
-            <div className={`inline-flex items-center gap-1 rounded-full ${compact ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-xs"} ${getExpiryBadgeClasses()}`} aria-live="polite">
-              <span className="opacity-80">Expires</span>
-              <span className="font-mono font-semibold">{timeLeft}</span>
+          {/* Expiry badge shown only on non-compact cards */}
+          {!compact && (
+            <div className="shrink-0">
+              <div className={`inline-flex items-center gap-1 rounded-full ${compact ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-xs"} ${getExpiryBadgeClasses()}`} aria-live="polite">
+                <span className="opacity-80">Expires</span>
+                <span className="font-mono font-semibold">{timeLeft}</span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Show merchant name then title as secondary text */}
-        {item.merchantName && (
+        {/* Secondary texts hidden on compact for clarity */}
+        {!compact && item.merchantName && (
           <p className={(compact ? "text-xs" : "text-sm") + " text-foreground/70 line-clamp-2"}>{item.merchantName}</p>
         )}
-        {item.title && (item.title.trim() !== (item.merchantName || "").trim()) && (
+        {!compact && item.title && (item.title.trim() !== (item.merchantName || "").trim()) && (
           <p className={(compact ? "text-xs" : "text-sm") + " text-foreground/70 mb-4 line-clamp-2 flex-1"}>{item.title}</p>
         )}
 
         {/* Price and Action Section */}
-        {(item.priceCurrent || item.priceOriginal) && (
+        {!compact && (item.priceCurrent || item.priceOriginal) && (
           <div className={(compact ? "pt-3" : "pt-4") + " mt-auto border-t border-foreground/5"}>
             <div className="flex items-center justify-between">
               {/* Price Display */}

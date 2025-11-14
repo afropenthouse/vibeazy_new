@@ -29,7 +29,7 @@ export default function HomePage() {
     <main>
       <Hero />
       {/* Highlights carousels */}
-      <Highlights />
+      {/* <Highlights /> */}
 
       {/* Search + Filter + List */}
       <Suspense fallback={null}>

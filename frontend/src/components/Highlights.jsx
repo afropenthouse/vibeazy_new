@@ -61,8 +61,8 @@ function Carousel({ title, items, compact = false }) {
             <div
               key={`${item.id}-${idx}`}
               className={(compact
-                ? "min-w-[80px] sm:min-w-[80px] lg:min-w-[100px]"
-                : "min-w-[260px] sm:min-w-[300px] lg:min-w-[140px]") + " mr-4 inline-block align-top"}
+                ? "min-w-[240px] sm:min-w-[260px] lg:min-w-[280px] w-[240px] sm:w-[260px] lg:w-[280px] h-[300px]"
+                : "min-w-[300px] sm:min-w-[340px] lg:min-w-[360px] w-[300px] sm:w-[340px] lg:w-[360px] h-[420px]") + " mr-4 inline-block align-top"}
             >
               <DiscountCard item={item} compact={compact} />
             </div>

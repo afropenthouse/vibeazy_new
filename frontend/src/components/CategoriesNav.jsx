@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -96,6 +97,8 @@ function CategoryIcon({ name }) {
 
 export default function CategoriesNav() {
   const [cats, setCats] = React.useState([]);
+  const params = useSearchParams();
+  const activeCategory = params.get("category") || "";
 
   const fetchCats = React.useCallback(async () => {
     try {
@@ -123,9 +126,14 @@ export default function CategoriesNav() {
             <Link
               key="all"
               href="/?category=All#hot-deals"
-              className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-foreground/90 hover:text-primary transition-colors whitespace-nowrap snap-start"
+              className={(activeCategory === "All"
+                ? "px-3 py-2 rounded-lg bg-primary text-white "
+                : "px-3 py-2 rounded-lg text-foreground/90 ")
+                + "inline-flex items-center gap-1.5 text-xs sm:text-sm whitespace-nowrap snap-start"}
             >
-              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-foreground/5"><CategoryIcon name="All" /></span>
+              <span className={(activeCategory === "All"
+                ? "bg-primary/25 text-white "
+                : "text-foreground/70 ") + "inline-flex items-center justify-center w-7 h-7 rounded-full"}><CategoryIcon name="All" /></span>
               <span>All</span>
             </Link>
 
@@ -144,9 +152,12 @@ export default function CategoriesNav() {
               <Link
                 key={c.id ?? label}
                 href={href}
-                className="inline-flex items-center gap-1.5 text-xs sm:text-sm text-foreground/80 hover:text-primary transition-colors whitespace-nowrap snap-start"
+                className={(activeCategory === label
+                  ? "px-3 py-2 rounded-lg bg-primary text-white "
+                  : "px-3 py-2 rounded-lg text-foreground/80 ")
+                  + "inline-flex items-center gap-1.5 text-xs sm:text-sm whitespace-nowrap snap-start"}
               >
-                <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-foreground/5">
+                <span className={(activeCategory === label ? "bg-primary/25 text-white " : "text-foreground/70 ") + "inline-flex items-center justify-center w-7 h-7 rounded-full"}>
                   <CategoryIcon name={label} />
                 </span>
                 <span>{label}</span>
