@@ -50,43 +50,28 @@ const slides = [
   },
 
   {
+    src: "/v4.png",
+    alt: "Hotels & Dining",
+    headline: "",
+    sub: "",
+  },
+
+  {
     src: "/discount_3.png",
     alt: "Hotels & Dining",
     headline: "",
     sub: "",
   },
 
-  // {
-  //   src: "/discount_4.png",
-  //   alt: "Hotels & Dining",
-  //   headline: "",
-  //   sub: "",
-  // },
   
-  // {
-  //   src: "/v1.png",
-  //   alt: "Hotels & Dining",
-  //   headline: "",
-  //   sub: "",
-  // },
-  // {
-  //   src: "/v2.png",
-  //   alt: "Hotels & Dining",
-  //   headline: "",
-  //   sub: "",
-  // },
+  
   {
     src: "/v3.png",
     alt: "Hotels & Dining",
     headline: "",
     sub: "",
   },
-  {
-    src: "/v4.png",
-    alt: "Hotels & Dining",
-    headline: "",
-    sub: "",
-  },
+  
   {
     src: "/v5.png",
     alt: "Hotels & Dining",

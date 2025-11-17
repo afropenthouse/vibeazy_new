@@ -18,7 +18,7 @@ function CategoryIcon({ name, active = false }) {
   else if (n.includes("furniture") || n.includes("home")) icon = "armchair.png";
   else if (n.includes("beauty") || n.includes("spa")) icon = "spa.png";
   else if (n.includes("travel") || n.includes("hotel") || n.includes("airbnb")) icon = "bed.png";
-  else if (n.includes("car")) icon = "car.png";
+  else if (n.includes("car") || n.includes("auto") || n.includes("automobile") || n.includes("vehicle")) icon = "car.png";
   else if (n.includes("gift")) icon = "gift.png";
   else if (n.includes("entertainment") || n.includes("event")) icon = "ticket.png";
   else if (n.includes("local")) icon = "marker.png";
@@ -39,7 +39,7 @@ function CategoryIcon({ name, active = false }) {
 export default function CategoriesNav() {
   const [cats, setCats] = React.useState([]);
   const params = useSearchParams();
-  const activeCategory = params.get("category") || "";
+  const activeCategory = params.get("category") || "All";
 
   const fetchCats = React.useCallback(async () => {
     try {
@@ -101,7 +101,7 @@ export default function CategoriesNav() {
               "Travel & Hotels": "Travel",
               "Entertainment & Events": "Events",
             };
-            const displayLabel = shortMap[label] || label.replace(/\s+&\s+/g, ' ').split(' ')[0];
+            const displayLabel = shortMap[label] || label;
             const href = `/?category=${encodeURIComponent(label)}#hot-deals`;
             return (
               <Link
