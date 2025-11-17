@@ -59,25 +59,24 @@ export default function Header() {
   };
   return (
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur">
-      {/* Main navbar */}
       <div className="border-b border-foreground/10 bg-background">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 h-18 md:h-20 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <Link href="/" aria-label="Go to homepage">
-              <Image src="/vibeazy.png" alt="VibeEazy" width={94} height={64} className="rounded" />
+            <Link href="/" aria-label="Go to homepage" className="inline-flex items-center">
+              <Image src="/vibeazy.png" alt="VibeEazy" width={84} height={56} className="rounded-sm" />
             </Link>
           </div>
-          {/* Search + location (Dribbble-style) */}
-          <form onSubmit={onSearch} className="flex-1 hidden md:flex items-center gap-3">
-            {/* Pill: input + category button + search icon */}
-            <div className="relative flex items-center gap-2 rounded-full border border-foreground/20 px-3 py-2 w-full md:w-[60%] lg:w-[55%]">
+          <form onSubmit={onSearch} className="flex-1 hidden md:flex items-center justify-center">
+            <div className="relative flex items-center gap-3 rounded-full border border-foreground/20 px-4 h-10 w-full md:w-[55%] lg:w-[50%] shadow-sm">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-foreground/60">
+                <circle cx="11" cy="11" r="7"/>
+                <path d="m21 21-4.3-4.3"/>
+              </svg>
               <input name="search" placeholder="Search deals" className="flex-1 bg-transparent outline-none text-sm" />
               <span className="h-5 w-px bg-foreground/10" aria-hidden="true" />
-
-              {/* Categories dropdown trigger */}
               <button
                 type="button"
-                className="relative inline-flex items-center gap-1 text-sm text-foreground/80 hover:text-foreground"
+                className="inline-flex items-center gap-1 text-sm text-foreground/80 hover:text-foreground"
                 aria-haspopup="menu"
                 aria-expanded={categoryOpen}
                 onClick={() => setCategoryOpen((o) => !o)}
@@ -85,16 +84,11 @@ export default function Header() {
                 <span>Categories</span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-foreground/60"><path d="m6 9 6 6 6-6"/></svg>
               </button>
-
-              {/* Pink search button */}
-              <button type="submit" aria-label="Search" className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-primary text-white hover:brightness-110">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="pointer-events-none"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+              <button type="submit" aria-label="Search" className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary text-white hover:brightness-110">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="pointer-events-none"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
               </button>
-
-              {/* Dropdown panel */}
               {categoryOpen && (
-                <div role="menu" className="absolute right-12 top-full mt-2 w-64 rounded-xl border border-foreground/10 bg-background shadow-xl p-2">
-                  {/* Always include "All" option */}
+                <div role="menu" className="absolute right-14 top-full mt-2 w-64 rounded-xl border border-foreground/10 bg-background shadow-xl p-2">
                   <button
                     key="all"
                     type="button"
@@ -125,28 +119,31 @@ export default function Header() {
               )}
             </div>
           </form>
-          {/* Icons + auth */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-3">
+            <Link href="/saved" aria-label="Liked deals" className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-foreground/20 text-foreground hover:bg-foreground/5">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            </Link>
+            <button type="button" aria-label="Notifications" className="relative inline-flex items-center justify-center w-9 h-9 rounded-full border border-foreground/20 text-foreground hover:bg-foreground/5">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+              <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-white text-[10px] font-semibold">10</span>
+            </button>
             {isAuthenticated ? (
               <div className="flex items-center gap-2">
-                {/* Icon buttons removed — actions remain in account menu */}
-                {/* Account dropdown */}
                 <div ref={menuRef} className="relative">
                   <button
                     type="button"
                     onClick={() => setMenuOpen((o) => !o)}
-                    className="inline-flex items-center gap-2 rounded-full bg-foreground/5 px-3 py-1.5 text-sm hover:bg-foreground/10"
+                    className="inline-flex items-center gap-2 rounded-full border border-foreground/20 px-3 py-1.5 text-sm hover:bg-foreground/5"
                     aria-haspopup="menu"
                     aria-expanded={menuOpen}
                   >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-foreground/70"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                    <span className="hidden sm:inline">Hi, {user?.name || user?.email}</span>
+                    <span className="font-medium">{user?.name || user?.email}</span>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-foreground/60"><path d="m6 9 6 6 6-6"/></svg>
                   </button>
                   {menuOpen && (
                     <div role="menu" className="absolute right-0 mt-2 w-56 rounded-xl border border-foreground/10 bg-background shadow-xl p-2">
                       <Link href="/saved" className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-foreground/5" role="menuitem">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-4 w-4" stroke="currentColor" fill="none" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z" /></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-4 w-4" stroke="currentColor" fill="none" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg>
                         Saved Deals
                       </Link>
                       <Link href="/submit" className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-foreground/5" role="menuitem">

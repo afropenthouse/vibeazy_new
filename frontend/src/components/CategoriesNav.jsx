@@ -18,16 +18,19 @@ function CategoryIcon({ name, active = false }) {
   else if (n.includes("furniture") || n.includes("home")) icon = "armchair.png";
   else if (n.includes("beauty") || n.includes("spa")) icon = "spa.png";
   else if (n.includes("travel") || n.includes("hotel") || n.includes("airbnb")) icon = "bed.png";
+  else if (n.includes("car")) icon = "car.png";
+  else if (n.includes("gift")) icon = "gift.png";
   else if (n.includes("entertainment") || n.includes("event")) icon = "ticket.png";
+  else if (n.includes("local")) icon = "marker.png";
 
   return (
     <img
       src={`${base}${icon}`}
       alt={name}
-      width={20}
-      height={20}
+      width={16}
+      height={16}
       loading="lazy"
-      className="w-5 h-5 object-contain"
+      className="w-4 h-4 object-contain"
       onError={(e) => { e.currentTarget.style.display = "none"; }}
     />
   );
@@ -57,22 +60,26 @@ export default function CategoriesNav() {
 
   return (
     <div className="w-full bg-background border-b border-foreground/10 sticky top-20 z-40">
-      <div className="mx-auto w-[90%] px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
         <nav className="relative py-3" aria-label="Top categories">
-          <div className="flex items-center gap-3 overflow-x-auto flex-nowrap scrollbar-hide snap-x snap-mandatory sm:overflow-visible sm:flex-wrap sm:justify-evenly">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 justify-start">
             {/* All option */}
             <Link
               key="all"
               href="/?category=All#hot-deals"
               className={(activeCategory === "All"
-                ? "px-3 py-2 rounded-lg bg-primary text-white "
-                : "px-3 py-2 rounded-lg text-foreground/90 ")
-                + "inline-flex items-center justify-center gap-2 text-xs sm:text-sm whitespace-nowrap snap-start"}
+                ? "px-2 py-1 rounded-lg bg-primary text-white "
+                : "px-2 py-1 rounded-lg text-foreground/90 ")
+                + "inline-flex items-center justify-center gap-2 text-[11px] sm:text-[12px]"}
             >
-              <span className={(activeCategory === "All"
-                ? "bg-primary/25 text-white "
-                : "text-foreground/70 ") + "flex items-center justify-center w-7 h-7 rounded-full"}><CategoryIcon name="All" active={activeCategory === "All"} /></span>
-              <span className="leading-none">All</span>
+              <span className="inline-flex items-center gap-2">
+                <span className={(activeCategory === "All"
+                  ? "bg-primary/25 text-white "
+                  : "text-foreground/70 ") + "flex items-center justify-center w-6 h-6 rounded-full"}>
+                  <CategoryIcon name="All" active={activeCategory === "All"} />
+                </span>
+                <span className="leading-none">All</span>
+              </span>
             </Link>
 
             {(cats.length ? cats : [
@@ -85,20 +92,32 @@ export default function CategoriesNav() {
             { id: -7, name: "Entertainment & Events" },
           ]).map((c) => {
             const label = c.name;
+            const shortMap = {
+              "Food & Restaurants": "Food",
+              "Fashion & Clothing": "Fashion",
+              "Furniture & Home": "Home",
+              "Beauty & Spa": "Beauty",
+              "Gadgets & Electronics": "Electronics",
+              "Travel & Hotels": "Travel",
+              "Entertainment & Events": "Events",
+            };
+            const displayLabel = shortMap[label] || label.replace(/\s+&\s+/g, ' ').split(' ')[0];
             const href = `/?category=${encodeURIComponent(label)}#hot-deals`;
             return (
               <Link
                 key={c.id ?? label}
                 href={href}
-                className={(activeCategory === label
-                  ? "px-3 py-2 rounded-lg bg-primary text-white "
-                  : "px-3 py-2 rounded-lg text-foreground/80 ")
-                  + "inline-flex items-center justify-center gap-2 text-xs sm:text-sm whitespace-nowrap snap-start"}
+                  className={(activeCategory === label
+                    ? "px-2 py-1 rounded-lg bg-primary text-white "
+                    : "px-2 py-1 rounded-lg text-foreground/80 ")
+                    + "inline-flex items-center justify-center gap-2 text-[11px] sm:text-[12px]"}
               >
-                <span className={(activeCategory === label ? "bg-primary/25 text-white " : "text-foreground/70 ") + "flex items-center justify-center w-7 h-7 rounded-full"}>
-                  <CategoryIcon name={label} active={activeCategory === label} />
+                <span className="inline-flex items-center gap-2">
+                  <span className={(activeCategory === label ? "bg-primary/25 text-white " : "text-foreground/70 ") + "flex items-center justify-center w-6 h-6 rounded-full"}>
+                    <CategoryIcon name={label} active={activeCategory === label} />
+                  </span>
+                  <span className="leading-none">{displayLabel}</span>
                 </span>
-                <span className="leading-none">{label}</span>
               </Link>
             );
           })}

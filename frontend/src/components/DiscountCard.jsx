@@ -172,14 +172,8 @@ export default function DiscountCard({ item, compact = false }) {
           aria-pressed={saved}
           aria-label={saved ? "Unsave deal" : "Save deal"}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            className={`h-5 w-5 transition-all duration-200 ${saved ? "text-red-500 fill-current" : "text-gray-600"}`}
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z" />
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={`h-5 w-5 transition-all duration-200 ${saved ? "text-red-500 fill-current" : "text-gray-600"}`} fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/>
           </svg>
         </button>
 
@@ -261,13 +255,10 @@ export default function DiscountCard({ item, compact = false }) {
                     href={offerUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={(compact ? "px-3 py-2 text-xs" : "px-4 py-2.5 text-sm") + " inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary/90 text-white hover:shadow-lg transition-all duration-200 hover:scale-105 font-semibold"}
+                    className={(compact ? "px-3 py-2 text-xs" : "px-4 py-2.5 text-sm") + " inline-flex items-center rounded-xl bg-gradient-to-r from-primary to-primary/90 text-white hover:shadow-lg transition-all duration-200 hover:scale-105 font-semibold"}
                     aria-label={`Get offer from ${item.merchantName || item.title}`}
                   >
                     <span>Get Offer</span>
-                    <svg className={(compact ? "w-3.5 h-3.5" : "w-4 h-4")} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                    </svg>
                   </a>
                 ) : (
                   <button

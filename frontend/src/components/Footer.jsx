@@ -3,10 +3,10 @@ import Image from "next/image";
 export default function Footer() {
   return (
     <footer id="contact" className="border-t border-foreground/10">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
         {/* Logo + slogan: center on mobile, left on desktop */}
-        <div className="flex items-center gap-4 justify-center md:justify-start">
-          <Image src="/vibeazy.png" alt="VibeEazy" width={94} height={64} className="rounded" />
+        <div className="flex items-center gap-3 justify-center md:justify-start">
+          <Image src="/vibeazy.png" alt="VibeEazy" width={84} height={56} className="rounded-sm" />
           <div className="text-center md:text-left">
             <p className="text-sm text-muted-foreground">Enjoy More, Spend Less!</p>
           </div>

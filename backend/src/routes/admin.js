@@ -430,7 +430,42 @@ router.get("/public/deals", async (req, res) => {
   const where = { isActive: true };
   if (city) where.city = city;
   if (category) where.category = category;
-  const deals = await prisma.deal.findMany({ where, orderBy: [{ discountPct: "desc" }, { createdAt: "desc" }] });
+  let deals = await prisma.deal.findMany({ where, orderBy: [{ discountPct: "desc" }, { createdAt: "desc" }] });
+  const group = new Map();
+  for (const d of deals) {
+    const key = d.category || "";
+    const arr = group.get(key) || [];
+    arr.push(d);
+    group.set(key, arr);
+  }
+  const keys = Array.from(group.keys());
+  for (let i = keys.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = keys[i];
+    keys[i] = keys[j];
+    keys[j] = tmp;
+  }
+  for (const k of keys) {
+    const arr = group.get(k);
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = arr[i];
+      arr[i] = arr[j];
+      arr[j] = tmp;
+    }
+  }
+  const mixed = [];
+  let remaining = deals.length;
+  while (remaining > 0) {
+    for (const k of keys) {
+      const arr = group.get(k);
+      if (arr && arr.length) {
+        mixed.push(arr.shift());
+        remaining--;
+      }
+    }
+  }
+  deals = mixed;
   res.json({ deals });
 });
 

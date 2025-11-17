@@ -34,12 +34,34 @@ const slides = [
   //   sub: "Get discounts from top fashion brands",
   // },
   // designed image
+  
   {
     src: "/discount.png",
     alt: "Hotels & Dining",
     headline: "",
     sub: "",
   },
+
+  {
+    src: "/discount_2.png",
+    alt: "Hotels & Dining",
+    headline: "",
+    sub: "",
+  },
+
+  {
+    src: "/discount_3.png",
+    alt: "Hotels & Dining",
+    headline: "",
+    sub: "",
+  },
+
+  // {
+  //   src: "/discount_4.png",
+  //   alt: "Hotels & Dining",
+  //   headline: "",
+  //   sub: "",
+  // },
   
   // {
   //   src: "/v1.png",
@@ -47,12 +69,12 @@ const slides = [
   //   headline: "",
   //   sub: "",
   // },
-  {
-    src: "/v2.png",
-    alt: "Hotels & Dining",
-    headline: "",
-    sub: "",
-  },
+  // {
+  //   src: "/v2.png",
+  //   alt: "Hotels & Dining",
+  //   headline: "",
+  //   sub: "",
+  // },
   {
     src: "/v3.png",
     alt: "Hotels & Dining",
