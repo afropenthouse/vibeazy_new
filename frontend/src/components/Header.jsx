@@ -67,7 +67,7 @@ export default function Header() {
             </Link>
           </div>
           <form onSubmit={onSearch} className="flex-1 hidden md:flex items-center justify-center">
-            <div className="relative flex items-center gap-3 rounded-full border border-foreground/20 px-4 h-10 w-full md:w-[55%] lg:w-[50%] shadow-sm">
+            <div className="relative flex items-center gap-3 rounded-full border border-foreground/20 px-4 h-10 w-full md:w-[80%] lg:w-[80%] xl:w-[75%] shadow-sm">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-foreground/60">
                 <circle cx="11" cy="11" r="7"/>
                 <path d="m21 21-4.3-4.3"/>
