@@ -620,7 +620,33 @@ export default function SearchFilter() {
   // Use only backend-provided deals; do not fall back to mock data
   const DATA = apiDeals;
 
-
+  const hashString = (s) => {
+    let h = 0;
+    for (let i = 0; i < s.length; i++) {
+      h = (h << 5) - h + s.charCodeAt(i);
+      h |= 0;
+    }
+    return h >>> 0;
+  };
+  const rng = (seed) => {
+    return function () {
+      let t = (seed += 0x6D2B79F5);
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  };
+  const shuffleWithSeed = (arr, seed) => {
+    const a = arr.slice();
+    const r = rng(seed);
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(r() * (i + 1));
+      const tmp = a[i];
+      a[i] = a[j];
+      a[j] = tmp;
+    }
+    return a;
+  };
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
     return DATA.filter((d) => {
@@ -687,6 +713,10 @@ export default function SearchFilter() {
     return arr;
   }, [filtered]);
 
+  const seedKey = `${selectedCategory}|${query}|${selectedCity}`;
+  const seed = useMemo(() => hashString(seedKey), [seedKey]);
+  const randomized = useMemo(() => shuffleWithSeed(filtered, seed), [filtered, seed]);
+
   const filteredCount = filtered.length;
   const displayedCount = Math.min(visibleCount, filteredCount);
 
@@ -708,22 +738,22 @@ export default function SearchFilter() {
           )}
         </div>
 
-        {filtered.length > 0 ? (
+        {randomized.length > 0 ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
-              {filtered.slice(0, visibleCount).map((item) => (
+              {randomized.slice(0, visibleCount).map((item) => (
                 <DiscountCard key={item.id} item={item} />
               ))}
             </div>
 
             {/* See more button shown only when there are more items to reveal */}
-            {filtered.length > visibleCount && (
+            {randomized.length > visibleCount && (
               <div className="mt-6 flex justify-center">
                 <button
                   type="button"
                   className="inline-flex items-center rounded-md bg-primary text-white px-4 py-2 text-sm hover:brightness-110 transition"
                   aria-label="See more products"
-                  onClick={() => setVisibleCount((c) => Math.min(filtered.length, c + 6))}
+                  onClick={() => setVisibleCount((c) => Math.min(randomized.length, c + 6))}
                 >
                   See more
                 </button>
