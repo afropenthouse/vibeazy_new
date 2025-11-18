@@ -56,12 +56,13 @@ const slides = [
     sub: "",
   },
 
-  {
-    src: "/discount_3.png",
-    alt: "Hotels & Dining",
-    headline: "",
-    sub: "",
-  },
+  // red
+  // {
+  //   src: "/discount_3.png",
+  //   alt: "Hotels & Dining",
+  //   headline: "",
+  //   sub: "",
+  // },
 
   
   
