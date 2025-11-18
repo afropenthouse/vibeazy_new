@@ -715,7 +715,50 @@ export default function SearchFilter() {
 
   const seedKey = `${selectedCategory}|${query}|${selectedCity}`;
   const seed = useMemo(() => hashString(seedKey), [seedKey]);
-  const randomized = useMemo(() => shuffleWithSeed(filtered, seed), [filtered, seed]);
+  const randomized = useMemo(() => {
+    const shuffled = shuffleWithSeed(filtered, seed);
+
+    // Ensure variety: among the first `windowSize` items, make sure at least
+    // `minRestaurants` items are restaurants by swapping them in from later
+    // positions if necessary. This keeps the shuffle deterministic (seeded)
+    // while enforcing the visibility constraint requested.
+    const windowSize = Math.min(9, shuffled.length);
+    const minRestaurants = 3;
+    if (windowSize === 0) return shuffled;
+
+    const isRestaurant = (deal) => {
+      if (!deal || !deal.category) return false;
+      return String(deal.category).toLowerCase().includes("restaur");
+    };
+
+    let countInWindow = 0;
+    for (let i = 0; i < windowSize; i++) if (isRestaurant(shuffled[i])) countInWindow++;
+    if (countInWindow >= minRestaurants) return shuffled;
+
+    // collect candidate indices after the window that are restaurants
+    const candidates = [];
+    for (let i = windowSize; i < shuffled.length; i++) {
+      if (isRestaurant(shuffled[i])) candidates.push(i);
+      if (candidates.length >= minRestaurants - countInWindow) break;
+    }
+    if (candidates.length === 0) return shuffled; // can't satisfy requirement
+
+    // swap restaurants into the earliest non-restaurant positions in the window
+    let needed = minRestaurants - countInWindow;
+    let candIdx = 0;
+    for (let i = 0; i < windowSize && needed > 0; i++) {
+      if (!isRestaurant(shuffled[i])) {
+        const from = candidates[candIdx++];
+        if (from === undefined) break;
+        const tmp = shuffled[i];
+        shuffled[i] = shuffled[from];
+        shuffled[from] = tmp;
+        needed--;
+      }
+    }
+
+    return shuffled;
+  }, [filtered, seed]);
 
   const filteredCount = filtered.length;
   const displayedCount = Math.min(visibleCount, filteredCount);
@@ -760,7 +803,7 @@ export default function SearchFilter() {
               </div>
             )}
           </>
-        ) : (
+        ) : ( 
           <div className="py-12 flex flex-col items-center justify-center col-span-full">
               {/* Show a category-specific empty state message. Use the human-friendly label
                   (from CATEGORY_OPTIONS) when available so long labels like "Food & Restaurants"
