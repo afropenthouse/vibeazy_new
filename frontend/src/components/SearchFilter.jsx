@@ -718,46 +718,84 @@ export default function SearchFilter() {
   const randomized = useMemo(() => {
     const shuffled = shuffleWithSeed(filtered, seed);
 
-    // Ensure variety: among the first `windowSize` items, make sure at least
-    // `minRestaurants` items are restaurants by swapping them in from later
-    // positions if necessary. This keeps the shuffle deterministic (seeded)
-    // while enforcing the visibility constraint requested.
+    // Priority: ensure the specific deal (e.g., Spicy ChickWhizz sandwich)
+    // appears first when present. Match by title or merchant name containing
+    // the keyword 'chickwhizz' (case-insensitive).
+    try {
+      const keyword = "chickwhizz";
+      const idx = shuffled.findIndex((d) => {
+        if (!d) return false;
+        const t = String(d.title || "").toLowerCase();
+        const m = String(d.merchantName || d.merchant_name || "").toLowerCase();
+        return t.includes(keyword) || m.includes(keyword);
+      });
+      if (idx > 0) {
+        const [item] = shuffled.splice(idx, 1);
+        shuffled.unshift(item);
+      }
+    } catch (e) {
+      // ignore any unexpected errors and continue with shuffled order
+    }
+
+    // Interleave preferred categories among the first window to avoid
+    // long runs of the same category. Desired round-robin order for
+    // the front window: Restaurants -> Electronics -> Fashion
     const windowSize = Math.min(9, shuffled.length);
-    const minRestaurants = 3;
     if (windowSize === 0) return shuffled;
 
-    const isRestaurant = (deal) => {
-      if (!deal || !deal.category) return false;
-      return String(deal.category).toLowerCase().includes("restaur");
-    };
+    const preferredOrder = ["restaurants", "electronics", "fashion"];
 
-    let countInWindow = 0;
-    for (let i = 0; i < windowSize; i++) if (isRestaurant(shuffled[i])) countInWindow++;
-    if (countInWindow >= minRestaurants) return shuffled;
+    // Build buckets for preferred categories and an 'others' bucket.
+    const buckets = {};
+    preferredOrder.forEach((p) => { buckets[p] = []; });
+    const others = [];
 
-    // collect candidate indices after the window that are restaurants
-    const candidates = [];
-    for (let i = windowSize; i < shuffled.length; i++) {
-      if (isRestaurant(shuffled[i])) candidates.push(i);
-      if (candidates.length >= minRestaurants - countInWindow) break;
+    for (let i = 0; i < shuffled.length; i++) {
+      const deal = shuffled[i];
+      const cat = String(deal.category || "").toLowerCase();
+      let placed = false;
+      for (const p of preferredOrder) {
+        if (cat.includes(p)) {
+          buckets[p].push(deal);
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) others.push(deal);
     }
-    if (candidates.length === 0) return shuffled; // can't satisfy requirement
 
-    // swap restaurants into the earliest non-restaurant positions in the window
-    let needed = minRestaurants - countInWindow;
-    let candIdx = 0;
-    for (let i = 0; i < windowSize && needed > 0; i++) {
-      if (!isRestaurant(shuffled[i])) {
-        const from = candidates[candIdx++];
-        if (from === undefined) break;
-        const tmp = shuffled[i];
-        shuffled[i] = shuffled[from];
-        shuffled[from] = tmp;
-        needed--;
+    // Fill the front window by round-robin through preferred categories.
+    const windowArr = [];
+    const usedIds = new Set();
+    while (windowArr.length < windowSize) {
+      let addedAny = false;
+      for (const p of preferredOrder) {
+        if (windowArr.length >= windowSize) break;
+        const b = buckets[p];
+        if (b.length) {
+          const it = b.shift();
+          windowArr.push(it);
+          usedIds.add(it.id);
+          addedAny = true;
+        }
+      }
+      if (!addedAny) break; // no more preferred items available
+    }
+
+    // Fill any remaining slots in the window with the next shuffled items
+    for (const it of shuffled) {
+      if (windowArr.length >= windowSize) break;
+      if (!usedIds.has(it.id)) {
+        windowArr.push(it);
+        usedIds.add(it.id);
       }
     }
 
-    return shuffled;
+    // Append the rest (preserve the seeded shuffle ordering for remaining items)
+    const rest = [];
+    for (const it of shuffled) if (!usedIds.has(it.id)) rest.push(it);
+
+    return [...windowArr, ...rest];
   }, [filtered, seed]);
 
   const filteredCount = filtered.length;
