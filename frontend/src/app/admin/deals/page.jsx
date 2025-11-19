@@ -223,6 +223,7 @@ export default function AdminDealsPage() {
         data = await res.json();
         if (!res.ok) throw new Error(data.error || "Update failed");
         setDeals((d) => d.map((x) => (x.id === editingId ? data.deal : x)));
+        await fetchDeals(token);
       } else {
         const res = await fetch(`${API_BASE}/admin/deals`, {
           method: "POST",
@@ -232,6 +233,7 @@ export default function AdminDealsPage() {
         data = await res.json();
         if (!res.ok) throw new Error(data.error || "Create failed");
         setDeals((d) => [data.deal, ...d]);
+        await fetchDeals(token);
       }
       setForm({ 
         description: "", merchantName: "", city: "", category: "", 
