@@ -37,7 +37,7 @@ export default function AdminDealsPage() {
   const [bulkUploadError, setBulkUploadError] = useState("");
   // New: URL paste flow
   const [urlText, setUrlText] = useState("");
-  const [defaults, setDefaults] = useState({ merchantName: "", city: "", category: "" });
+  const [defaults, setDefaults] = useState({ merchantName: "", city: "", category: "", expiresAt: "" });
   const [urlSubmitting, setUrlSubmitting] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [currentImageUrl, setCurrentImageUrl] = useState("");
@@ -659,7 +659,7 @@ export default function AdminDealsPage() {
                   className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
                   placeholder={`https://www.jumia.com.ng/...\nhttps://www.konga.com/...`}
                 />
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mt-3">
                   <div>
                     <label className="block text-xs font-medium text-slate-700">Merchant</label>
                     <input
@@ -690,12 +690,21 @@ export default function AdminDealsPage() {
                       className="w-full px-3 py-2 rounded-lg border border-slate-300"
                     />
                   </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700">Expires At</label>
+                    <input
+                      type="date"
+                      value={defaults.expiresAt}
+                      onChange={(e)=>setDefaults((d)=>({ ...d, expiresAt: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-300"
+                    />
+                  </div>
                 </div>
                 <div className="mt-3 flex items-center justify-end gap-3">
                   <button
                     type="button"
                     className="rounded-lg bg-slate-200 text-slate-700 px-4 py-2 font-medium hover:bg-slate-300 transition-all duration-200"
-                    onClick={() => { setUrlText(""); setDefaults({ merchantName: "", city: "", category: "" }); setBulkError(""); setBulkSuccess(""); }}
+                    onClick={() => { setUrlText(""); setDefaults({ merchantName: "", city: "", category: "", expiresAt: "" }); setBulkError(""); setBulkSuccess(""); }}
                   >
                     Clear URLs
                   </button>

@@ -294,6 +294,97 @@ function oneSentence(desc, maxChars = 180) {
   return slice.length ? `${slice}.` : txt;
 }
 
+function looksLikeLogo(u) {
+  if (!u) return true;
+  const s = String(u).toLowerCase();
+  if (s.endsWith('.svg')) return true;
+  return /(logo|favicon|icon|sprite)/i.test(s);
+}
+
+function pickBestFromSrcset(srcset) {
+  if (!srcset) return null;
+  const parts = String(srcset).split(',').map((s) => s.trim()).filter(Boolean);
+  let best = null;
+  let bestScore = 0;
+  for (const p of parts) {
+    const m = p.match(/\s+(\d+)(w|x)$/);
+    const url = p.split(/\s+/)[0];
+    let score = 0;
+    if (m) score = Number(m[1]);
+    else {
+      const n = (url.match(/([0-9]{3,})(?:w|x|\.)/) || [])[1];
+      score = n ? Number(n) : url.length;
+    }
+    if (score > bestScore) { bestScore = score; best = url; }
+  }
+  return best || null;
+}
+
+function selectBestImage($) {
+  let best = null;
+  let bestScore = 0;
+  $('img').each((_, el) => {
+    const src = ($(el).attr('src') || $(el).attr('data-src') || '').trim();
+    const srcset = ($(el).attr('srcset') || '').trim();
+    let url = src;
+    const fromSet = pickBestFromSrcset(srcset);
+    if (fromSet) url = fromSet;
+    if (!url || !/^https?:/i.test(url)) return;
+    if (looksLikeLogo(url)) return;
+    const w = Number($(el).attr('width') || 0);
+    const h = Number($(el).attr('height') || 0);
+    const score = (w && h ? w * h : url.length);
+    if (score > bestScore) { bestScore = score; best = url; }
+  });
+  return best;
+}
+
+function pickGalleryImage($) {
+  const sels = [
+    '.image-gallery img',
+    '[class*="gallery"] img',
+    '[class*="carousel"] img',
+    '[class*="slider"] img',
+    'figure img',
+  ];
+  for (const sel of sels) {
+    let best = null; let bestScore = 0;
+    $(sel).each((_, el) => {
+      const src = ($(el).attr('src') || $(el).attr('data-src') || '').trim();
+      const srcset = ($(el).attr('srcset') || '').trim();
+      let url = src;
+      const fromSet = pickBestFromSrcset(srcset);
+      if (fromSet) url = fromSet;
+      if (!url || !/^https?:/i.test(url)) return;
+      if (looksLikeLogo(url)) return;
+      const w = Number($(el).attr('width') || 0);
+      const h = Number($(el).attr('height') || 0);
+      const score = (w && h ? w * h : url.length);
+      if (score > bestScore) { bestScore = score; best = url; }
+    });
+    if (best) return best;
+  }
+  return null;
+}
+
+function pickH1($) {
+  const t = $('h1').first().text() || '';
+  const s = t.trim();
+  return s.length > 2 ? s : null;
+}
+
+function findCurrencyInHtml(html) {
+  const rx = /(?:₦|NGN|N\$|\$|£)\s*([0-9]{3,}(?:,[0-9]{3})*(?:\.[0-9]+)?)/g;
+  const nums = [];
+  let m;
+  while ((m = rx.exec(String(html)))) {
+    const n = Number(m[1].replace(/,/g, ''));
+    if (Number.isFinite(n) && n >= 100) nums.push(n);
+  }
+  if (!nums.length) return null;
+  return Math.max(...nums);
+}
+
 async function extractProductFromUrl(url) {
   const html = await fetchHtml(url);
   const $ = cheerio.load(html);
@@ -330,10 +421,29 @@ async function extractProductFromUrl(url) {
   const ph = extractPricesHeuristic($);
   if (ph.newPrice && !data.newPrice) data.newPrice = ph.newPrice;
   if (ph.oldPrice) data.oldPrice = ph.oldPrice;
+  if (!data.newPrice && !data.oldPrice) {
+    const np = findCurrencyInHtml(html);
+    if (np) data.newPrice = np;
+  }
   // Normalize strings
   if (data.title) data.title = String(data.title).trim();
+  try {
+    const host = new URL(url).hostname;
+    if (!data.title || /buy.*sell.*cars/i.test(data.title)) {
+      const h1 = pickH1($);
+      if (h1) data.title = h1;
+    }
+    if (/carkobo/i.test(host)) {
+      const gal = pickGalleryImage($);
+      if (gal) data.imageUrl = gal;
+    }
+  } catch {}
   if (data.description) data.description = oneSentence(data.description);
   if (data.imageUrl) data.imageUrl = String(data.imageUrl).trim();
+  if (!data.imageUrl || looksLikeLogo(data.imageUrl)) {
+    const best = selectBestImage($);
+    if (best) data.imageUrl = best;
+  }
   return data;
 }
 

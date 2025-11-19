@@ -22,6 +22,47 @@ function oneSentence(desc, maxChars = 180) {
   return slice.length ? `${slice}.` : txt;
 }
 
+function splitCsvRow(s) {
+  const out = [];
+  let cur = "";
+  let q = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (c === '"') {
+      if (q && s[i + 1] === '"') { cur += '"'; i++; }
+      else { q = !q; }
+    } else if (c === ',' && !q) {
+      out.push(cur.trim());
+      cur = "";
+    } else {
+      cur += c;
+    }
+  }
+  out.push(cur.trim());
+  return out;
+}
+
+function parseCsv(text) {
+  const lines = String(text).split(/\r?\n/).filter((l) => l.trim().length);
+  if (!lines.length) return [];
+  const header = splitCsvRow(lines[0]).map((h) => h.trim());
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = splitCsvRow(lines[i]);
+    const obj = {};
+    for (let j = 0; j < header.length; j++) obj[header[j]] = cols[j] ?? "";
+    rows.push(obj);
+  }
+  return rows;
+}
+
+function limitWords(s, n = 4) {
+  if (!s) return null;
+  const words = String(s).trim().split(/\s+/).filter(Boolean);
+  const take = words.slice(0, n).join(" ");
+  return take || null;
+}
+
 // Admin login using single env credentials
 router.post("/login", async (req, res) => {
   const { email, password } = req.body || {};
@@ -207,6 +248,78 @@ router.post("/deals/bulk", adminAuth, async (req, res) => {
   }
 });
 
+router.post("/deals/bulk-csv", adminAuth, upload.single("file"), async (req, res) => {
+  const prisma = req.prisma;
+  const file = req.file;
+  const defaults = req.body && typeof req.body.defaults === "string"
+    ? JSON.parse(req.body.defaults)
+    : (req.body?.defaults || {});
+  if (!file || !file.buffer) return res.status(400).json({ error: "Upload a CSV file as 'file'" });
+
+  const autoDiscount = (oldPrice, newPrice) => {
+    if (oldPrice === undefined || newPrice === undefined || oldPrice === null || newPrice === null) return null;
+    const oldP = Number(oldPrice);
+    const newP = Number(newPrice);
+    if (Number.isFinite(oldP) && Number.isFinite(newP) && oldP > 0 && newP >= 0 && newP <= oldP) {
+      return Math.round(((oldP - newP) / oldP) * 100);
+    }
+    return null;
+  };
+
+  try {
+    const rows = parseCsv(file.buffer.toString("utf8"));
+    const toCreate = [];
+    const errors = [];
+
+    for (let idx = 0; idx < rows.length; idx++) {
+      const r = rows[idx] || {};
+      const merchantName = String(r.merchantName || defaults.merchantName || "").trim();
+      const city = String(r.city || defaults.city || "").trim();
+      const imageUrl = String(r.imageUrl || defaults.imageUrl || "").trim();
+      const titleCandidate = String((r.title ?? r.description ?? merchantName) || "").trim();
+      if (!merchantName || !city || !imageUrl || !titleCandidate) {
+        errors.push({ index: idx, error: "Missing required fields (merchantName, city, imageUrl, title/description)" });
+        continue;
+      }
+
+      const oldPrice = r.oldPrice !== undefined && r.oldPrice !== "" ? Number(r.oldPrice) : (defaults.oldPrice ?? null);
+      const newPrice = r.newPrice !== undefined && r.newPrice !== "" ? Number(r.newPrice) : (defaults.newPrice ?? null);
+      const discountPct = r.discountPct !== undefined && r.discountPct !== ""
+        ? Number(r.discountPct)
+        : autoDiscount(oldPrice, newPrice);
+      const expiresAt = r.expiresAt ? new Date(r.expiresAt) : (defaults.expiresAt ? new Date(defaults.expiresAt) : null);
+      const tagsRaw = r.tags ?? defaults.tags ?? [];
+      const tags = Array.isArray(tagsRaw)
+        ? tagsRaw
+        : typeof tagsRaw === "string" && tagsRaw.length
+          ? tagsRaw.split("|").map((t) => t.trim()).filter(Boolean)
+          : [];
+
+      toCreate.push({
+        title: titleCandidate,
+        description: r.description || defaults.description || null,
+        merchantName,
+        city,
+        category: r.category || defaults.category || null,
+        tags,
+        imageUrl,
+        oldPrice: oldPrice ?? null,
+        newPrice: newPrice ?? null,
+        discountPct,
+        expiresAt,
+        deepLink: r.deepLink || defaults.deepLink || null,
+        isActive: r.isActive !== undefined ? (String(r.isActive).toLowerCase() !== "false") : true,
+      });
+    }
+
+    if (!toCreate.length) return res.status(400).json({ error: "No valid rows", errors });
+    const created = await prisma.$transaction(toCreate.map((data) => prisma.deal.create({ data })));
+    res.status(201).json({ createdCount: created.length, errors, created });
+  } catch (e) {
+    res.status(400).json({ error: "Invalid CSV" });
+  }
+});
+
 // Bulk create deals and upload each image to Cloudinary
 // Body: { items: DealInput[], options?: { uploadToCloudinary?: boolean } }
 // DealInput: { title?, description?, merchantName, city, category?, tags?, imageUrl, oldPrice?, newPrice?, discountPct?, expiresAt?, deepLink?, isActive? }
@@ -314,16 +427,23 @@ router.post("/deals/extract", adminAuth, async (req, res) => {
       const cloudUrl = uploadRes.secure_url;
 
       // Price mapping: extract both old and new when available
-      const newPrice = data.newPrice ?? null;
-      const oldPrice = data.oldPrice ?? defaults.oldPrice ?? null;
-      let discountPct = defaults.discountPct ?? null;
-      if (oldPrice !== null && newPrice !== null && Number(oldPrice) > 0 && Number(newPrice) >= 0 && Number(newPrice) <= Number(oldPrice)) {
+      let newPrice = data.newPrice ?? null;
+      let oldPrice = data.oldPrice ?? defaults.oldPrice ?? null;
+      let discountPct = defaults.discountPct !== undefined ? Number(defaults.discountPct) : null;
+      if (discountPct === null && oldPrice !== null && newPrice !== null && Number(oldPrice) > 0 && Number(newPrice) >= 0 && Number(newPrice) <= Number(oldPrice)) {
         discountPct = Math.round(((Number(oldPrice) - Number(newPrice)) / Number(oldPrice)) * 100);
+      }
+      if (discountPct !== null) {
+        if (newPrice !== null && oldPrice === null) {
+          oldPrice = Math.round(Number(newPrice) / (1 - discountPct / 100));
+        } else if (oldPrice !== null && newPrice === null) {
+          newPrice = Math.round(Number(oldPrice) * (1 - discountPct / 100));
+        }
       }
 
       const deal = await prisma.deal.create({ data: {
         title: titleCandidate,
-        description: data.description || defaults.description || null,
+        description: limitWords(data.description || defaults.description || null, defaults.maxDescriptionWords || 4),
         merchantName,
         city: String(defaults.city).trim(),
         category: defaults.category || null,
@@ -343,6 +463,102 @@ router.post("/deals/extract", adminAuth, async (req, res) => {
   }
 
   res.status(201).json({ createdCount: created.length, created, errors });
+});
+
+router.post("/deals/crawl", adminAuth, async (req, res) => {
+  const prisma = req.prisma;
+  const body = req.body || {};
+  const startUrl = String(body.startUrl || "").trim();
+  const defaults = body.defaults || {};
+  const limit = Number(body.limit || 50);
+  if (!startUrl) return res.status(400).json({ error: "startUrl required" });
+  if (!defaults.city) return res.status(400).json({ error: "defaults.city required" });
+
+  const { extractProductFromUrl } = require("../utils/extractProduct");
+  const { configureCloudinary } = require("../utils/cloudinary");
+  const cheerio = require("cheerio");
+
+  try {
+    const cloudinary = configureCloudinary();
+    const resp = await fetch(startUrl);
+    if (!resp.ok) return res.status(400).json({ error: `Failed to fetch ${startUrl}` });
+    const html = await resp.text();
+    const $ = cheerio.load(html);
+    const host = new URL(startUrl).origin;
+    const hrefs = new Set();
+    $('a[href]').each((_, el) => {
+      let href = $(el).attr('href') || '';
+      href = href.trim();
+      if (!href) return;
+      if (href.startsWith('/')) href = host + href;
+      if (!/^https?:/i.test(href)) return;
+      try {
+        const u = new URL(href);
+        if (u.origin !== host) return;
+        if (u.pathname.length < 2) return;
+        if (/\.(jpg|jpeg|png|webp|gif)$/i.test(u.pathname)) return;
+        if (/contact|about|login|signup|cart|terms|privacy/i.test(u.pathname)) return;
+        const pathPref = String(defaults.pathIncludes || '').trim();
+        if (pathPref) {
+          if (!u.pathname.toLowerCase().includes(pathPref.toLowerCase())) return;
+        } else {
+          if (/carkobo\.com/i.test(host)) {
+            if (!/\/listings\//i.test(u.pathname)) return;
+          }
+        }
+        hrefs.add(u.toString());
+      } catch {}
+    });
+
+    const candidates = Array.from(hrefs).slice(0, Math.max(1, limit * 3));
+    const created = [];
+    const errors = [];
+    for (const url of candidates) {
+      if (created.length >= limit) break;
+      try {
+        const data = await extractProductFromUrl(url);
+        const titleCandidate = String(data.title || defaults.title || url).trim();
+        if (!titleCandidate || !data.imageUrl) { errors.push({ url, error: "No product data" }); continue; }
+        const uploadRes = await cloudinary.uploader.upload(data.imageUrl, { folder: "vibeazy/deals" });
+        const cloudUrl = uploadRes.secure_url;
+        let newPrice = data.newPrice ?? null;
+        let oldPrice = data.oldPrice ?? defaults.oldPrice ?? null;
+        let discountPct = defaults.discountPct !== undefined ? Number(defaults.discountPct) : null;
+        if (discountPct === null && oldPrice !== null && newPrice !== null && Number(oldPrice) > 0 && Number(newPrice) >= 0 && Number(newPrice) <= Number(oldPrice)) {
+          discountPct = Math.round(((Number(oldPrice) - Number(newPrice)) / Number(oldPrice)) * 100);
+        }
+        if (discountPct !== null) {
+          if (newPrice !== null && oldPrice === null) {
+            oldPrice = Math.round(Number(newPrice) / (1 - discountPct / 100));
+          } else if (oldPrice !== null && newPrice === null) {
+            newPrice = Math.round(Number(oldPrice) * (1 - discountPct / 100));
+          }
+        }
+        const deal = await prisma.deal.create({ data: {
+          title: titleCandidate,
+          description: limitWords(data.description || defaults.description || null, defaults.maxDescriptionWords || 4),
+          merchantName: String(defaults.merchantName || new URL(startUrl).hostname.replace(/^www\./, "")).trim(),
+          city: String(defaults.city).trim(),
+          category: defaults.category || null,
+          tags: Array.isArray(defaults.tags) ? defaults.tags : [],
+          imageUrl: cloudUrl,
+          oldPrice: oldPrice ?? null,
+          newPrice: newPrice ?? null,
+          discountPct,
+          expiresAt: defaults.expiresAt ? new Date(defaults.expiresAt) : null,
+          deepLink: url,
+          isActive: true,
+        } });
+        created.push(deal);
+      } catch (e) {
+        errors.push({ url, error: String(e?.message || e) });
+      }
+    }
+
+    res.status(201).json({ createdCount: created.length, created, errors });
+  } catch (e) {
+    res.status(500).json({ error: "Crawl failed" });
+  }
 });
 
 // List all deals (admin)
