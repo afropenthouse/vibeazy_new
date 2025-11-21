@@ -1,4 +1,5 @@
 "use client";
+import { Suspense } from "react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import Image from "next/image";
@@ -6,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
-export default function SubmitDealPage() {
+function SubmitDealPageInner() {
   const { isAuthenticated, user } = useAuth();
   const router = useRouter();
   const [imageUrl, setImageUrl] = useState("");
@@ -493,5 +494,13 @@ export default function SubmitDealPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function SubmitDealPage() {
+  return (
+    <Suspense fallback={<main className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"><div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 text-center"><p className="text-gray-700 font-medium">Loading...</p></div></main>}>
+      <SubmitDealPageInner />
+    </Suspense>
   );
 }
