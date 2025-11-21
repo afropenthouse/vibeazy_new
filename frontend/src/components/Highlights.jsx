@@ -29,7 +29,7 @@ function useDeals() {
     let cancelled = false;
     async function load() {
       try {
-        const res = await fetch(`${API_BASE}/admin/public/deals`);
+        const res = await fetch(`${API_BASE}/admin/public/deals?paidOnly=true`);
         const data = await res.json();
         if (!cancelled) {
           if (res.ok && Array.isArray(data.deals) && data.deals.length > 0) {
@@ -129,7 +129,7 @@ export default function Highlights() {
   return (
     <div>
       {topDiscounts.length > 0 && (
-        <Carousel title="Top Deals" items={topDiscounts} compact={false} />
+        <Carousel title="Top Deals" items={topDiscounts} compact={true} />
       )}
     </div>
   );

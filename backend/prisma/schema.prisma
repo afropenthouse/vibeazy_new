@@ -18,6 +18,7 @@ model User {
   resetTokens   PasswordResetToken[]
   verificationTokens EmailVerificationToken[]
   submissions   UserDealSubmission[]
+  payments      Payment[]
 }
 
 model SavedDeal {
@@ -114,7 +115,35 @@ model UserDealSubmission {
   dealId       Int?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+  payments     Payment[]
 
   @@index([status])
   @@index([userId])
+}
+
+// Payments for user deal submissions
+model Payment {
+  id          Int       @id @default(autoincrement())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      Int
+  reference   String    @unique
+  status      String    @default("initialized") // initialized | success | failed
+  amountKobo  Int
+  currency    String    @default("NGN")
+  metadata    Json?
+  used        Boolean   @default(false)
+  usedAt      DateTime?
+  submission  UserDealSubmission? @relation(fields: [submissionId], references: [id])
+  submissionId Int?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model NewsletterSubscription {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  createdAt DateTime @default(now())
 }

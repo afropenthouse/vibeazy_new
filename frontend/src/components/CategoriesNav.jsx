@@ -134,15 +134,15 @@ export default function CategoriesNav() {
                 + "inline-flex items-center justify-center gap-1.5 text-[11px] sm:text-[12px] shrink-0"}
             >
               <span className="inline-flex items-center gap-2">
-                <span className={(activeCategory === "All"
-                  ? "bg-primary/25 text-white "
-                  : "text-foreground/70 ") + "flex items-center justify-center w-5 h-5 rounded-full"}>
+              <span className={(activeCategory === "All"
+                ? "bg-primary/10 text-primary "
+                : "text-foreground/70 ") + "flex items-center justify-center px-2 py-1 rounded-md border border-foreground/10"}>
                   <CategoryIcon name="All" active={activeCategory === "All"} />
                 </span>
                 <span className="leading-none">All</span>
                 <span className={(activeCategory === "All" 
-                  ? "ml-0.5 inline-flex items-center justify-center rounded-full bg-white/20 text-white text-[10px] px-1 py-[2px]"
-                  : "ml-0.5 inline-flex items-center justify-center rounded-full bg-foreground/10 text-foreground/80 text-[10px] px-1 py-[2px]"
+                  ? "ml-0.5 inline-flex items-center justify-center rounded-md border border-white/30 bg-white/10 text-white text-[10px] px-1.5 py-[2px]"
+                  : "ml-0.5 inline-flex items-center justify-center rounded-md border border-foreground/10 bg-foreground/5 text-foreground/80 text-[10px] px-1.5 py-[2px]"
                 )}>{counts.All || 0}</span>
               </span>
             </Link>
@@ -178,13 +178,13 @@ export default function CategoriesNav() {
                     + "inline-flex items-center justify-center gap-1.5 text-[11px] sm:text-[12px] shrink-0"}
               >
                 <span className="inline-flex items-center gap-2">
-                  <span className={(activeCategory === label ? "bg-primary/25 text-white " : "text-foreground/70 ") + "flex items-center justify-center w-5 h-5 rounded-full"}>
+                  <span className={(activeCategory === label ? "bg-primary/10 text-primary " : "text-foreground/70 ") + "flex items-center justify-center px-2 py-1 rounded-md border border-foreground/10"}>
                     <CategoryIcon name={label} active={activeCategory === label} />
                   </span>
                   <span className="leading-none">{displayLabel}</span>
                   <span className={(activeCategory === label 
-                    ? "ml-0.5 inline-flex items-center justify-center rounded-full bg-white/20 text-white text-[10px] px-1 py-[2px]"
-                    : "ml-0.5 inline-flex items-center justify-center rounded-full bg-foreground/10 text-foreground/80 text-[10px] px-1 py-[2px]"
+                    ? "ml-0.5 inline-flex items-center justify-center rounded-md border border-white/30 bg-white/10 text-white text-[10px] px-1.5 py-[2px]"
+                    : "ml-0.5 inline-flex items-center justify-center rounded-md border border-foreground/10 bg-foreground/5 text-foreground/80 text-[10px] px-1.5 py-[2px]"
                   )}>{counts[label] || 0}</span>
                 </span>
               </Link>

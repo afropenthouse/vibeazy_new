@@ -72,7 +72,22 @@ router.post("/submit", auth, async (req, res) => {
   if (!data.merchantName || !data.city || !data.imageUrl) {
     return res.status(400).json({ error: "merchantName, city, imageUrl are required" });
   }
+  const paymentRef = data.paymentRef || data.paymentReference || null;
+  if (!paymentRef) {
+    return res.status(402).json({ error: "Payment required" });
+  }
   try {
+    const payment = await prisma.payment.findUnique({ where: { reference: paymentRef } });
+    if (!payment || payment.userId !== req.user.id) {
+      return res.status(404).json({ error: "Payment not found" });
+    }
+    if (payment.status !== "success") {
+      return res.status(402).json({ error: "Payment not completed" });
+    }
+    if (payment.used) {
+      return res.status(400).json({ error: "Payment already used" });
+    }
+
     // Ensure we always have a non-empty title (Prisma schema requires it)
     const titleCandidate = String((data.title ?? data.description ?? data.merchantName) || "").trim();
     if (!titleCandidate) {
@@ -104,6 +119,10 @@ router.post("/submit", auth, async (req, res) => {
         deepLink: data.deepLink || null,
         status: "pending",
       },
+    });
+    await prisma.payment.update({
+      where: { reference: paymentRef },
+      data: { used: true, usedAt: new Date(), submissionId: sub.id },
     });
     res.status(201).json({ submission: sub });
   } catch (e) {

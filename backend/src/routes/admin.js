@@ -642,11 +642,32 @@ router.delete("/deals/:id", adminAuth, async (req, res) => {
 // Public deals feed for webapp
 router.get("/public/deals", async (req, res) => {
   const prisma = req.prisma;
-  const { city, category } = req.query;
+  const { city, category, paidOnly } = req.query;
   const where = { isActive: true };
   if (city) where.city = city;
   if (category) where.category = category;
-  let deals = await prisma.deal.findMany({ where, orderBy: [{ discountPct: "desc" }, { createdAt: "desc" }] });
+  let deals;
+  if (String(paidOnly).toLowerCase() === "true") {
+    try {
+      const subs = await prisma.userDealSubmission.findMany({
+        where: {
+          status: "approved",
+          dealId: { not: null },
+          payments: { some: { status: "success", used: true } },
+        },
+        select: { dealId: true },
+      });
+      const ids = Array.from(new Set(subs.map((s) => s.dealId).filter((id) => typeof id === "number")));
+      deals = ids.length
+        ? await prisma.deal.findMany({ where: { ...where, id: { in: ids } }, orderBy: [{ discountPct: "desc" }, { createdAt: "desc" }] })
+        : [];
+    } catch (e) {
+      console.error("paidOnly filter error", e);
+      deals = [];
+    }
+  } else {
+    deals = await prisma.deal.findMany({ where, orderBy: [{ discountPct: "desc" }, { createdAt: "desc" }] });
+  }
   const group = new Map();
   for (const d of deals) {
     const key = d.category || "";

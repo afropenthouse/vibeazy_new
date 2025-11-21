@@ -74,7 +74,9 @@ app.get("/health", (req, res) => {
 app.use("/auth", require("./routes/auth"));
 app.use("/password", require("./routes/password"));
 app.use("/deals", require("./routes/deals"));
+app.use("/payments", require("./routes/payments"));
 app.use("/admin", require("./routes/admin"));
+app.use("/newsletter", require("./routes/newsletter"));
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
