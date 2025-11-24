@@ -1,6 +1,6 @@
 "use client";
 import { Suspense } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -117,39 +117,38 @@ function SubmitDealPageInner() {
         setError(e.message || "Payment verification error");
       }
     })();
-  }, [params]);
+  }, [params, submitDeal]);
 
-  if (!isAuthenticated) {
-    return (
-      <main className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-        <div className="relative w-full max-w-md">
-          <button
-            type="button"
-            aria-label="Close"
-            onClick={() => router.push("/")}
-            className="absolute -top-6 right-0 bg-white text-gray-800 shadow rounded-full w-9 h-9 flex items-center justify-center hover:bg-gray-100"
-          >
-            ✕
-          </button>
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 text-center space-y-4">
-            <div className="w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center mx-auto">
-              <span className="text-xl">🔒</span>
-            </div>
-            <h1 className="text-xl font-semibold text-gray-900">Join to Share Deals</h1>
-            <p className="text-gray-600">Sign in to submit amazing deals to our community</p>
-            <div className="space-y-3">
-              <a href="/login" className="block w-full bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700 transition-colors">
-                Sign In
-              </a>
-              <a href="/signup" className="block w-full border border-gray-300 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors">
-                Create Account
-              </a>
-            </div>
+
+  const unauthenticatedContent = (
+    <main className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="relative w-full max-w-md">
+        <button
+          type="button"
+          aria-label="Close"
+          onClick={() => router.push("/")}
+          className="absolute -top-6 right-0 bg-white text-gray-800 shadow rounded-full w-9 h-9 flex items-center justify-center hover:bg-gray-100"
+        >
+          ✕
+        </button>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 text-center space-y-4">
+          <div className="w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center mx-auto">
+            <span className="text-xl">🔒</span>
+          </div>
+          <h1 className="text-xl font-semibold text-gray-900">Join to Share Deals</h1>
+          <p className="text-gray-600">Sign in to submit amazing deals to our community</p>
+          <div className="space-y-3">
+            <a href="/login" className="block w-full bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700 transition-colors">
+              Sign In
+            </a>
+            <a href="/signup" className="block w-full border border-gray-300 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors">
+              Create Account
+            </a>
           </div>
         </div>
-      </main>
-    );
-  }
+      </div>
+    </main>
+  );
 
   const handleImageUpload = async (file) => {
     if (!file) return;
@@ -181,7 +180,7 @@ function SubmitDealPageInner() {
     }
   };
 
-  const submitDeal = async () => {
+  const submitDeal = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
@@ -212,7 +211,7 @@ function SubmitDealPageInner() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [imageUrl, form, paymentRef]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

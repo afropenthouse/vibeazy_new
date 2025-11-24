@@ -87,7 +87,7 @@ export default function SignupPage() {
         {!!success && (
           <div className="mt-4 rounded-lg border border-green-300 bg-green-50 p-3 text-sm text-green-700">
             <div className="font-medium">{success}</div>
-            <p className="mt-1">We sent a verification link to your inbox. Open it to activate your account. If you don’t see it, check your spam folder.</p>
+            <p className="mt-1">We sent a verification link to your inbox. Open it to activate your account. If you don&rsquo;t see it, check your spam folder.</p>
           </div>
         )}
         <p className="text-sm text-foreground/70 mt-4">

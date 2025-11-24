@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import Image from "next/image";
 
@@ -88,7 +88,7 @@ export default function MyDealsPage() {
   };
 
   // Interest counts refresh helper
-  const refreshInterestCounts = async () => {
+  const refreshInterestCounts = useCallback(async () => {
     if (!token) return;
     try {
       const res = await fetch(`${API_BASE}/deals/interest/counts/my-submissions`, {
@@ -103,8 +103,7 @@ export default function MyDealsPage() {
     } catch {
       setToast("Failed to load interest counts");
     }
-  };
-
+  }, [token]);
   // Track interest click for a submission
   const trackInterestClick = async ({ submissionId }) => {
     try {
@@ -150,10 +149,9 @@ export default function MyDealsPage() {
 
   // Load interest counts after items load
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || items.length === 0) return;
     refreshInterestCounts();
-  }, [isAuthenticated, token, items.length]);
-
+  }, [isAuthenticated, items.length, refreshInterestCounts]);
   const beginEdit = (item) => {
     setEditing({ ...item });
   };
@@ -227,8 +225,8 @@ export default function MyDealsPage() {
               Login to view your deals
             </h3>
             <p className="text-slate-600 text-lg mb-8 max-w-md mx-auto leading-relaxed">
-              Sign in to manage the deals you've submitted.
-            </p>
+              Sign in to manage the deals you&apos;ve submitted.
+              </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a href="/login" className="rounded-2xl bg-[#6d0e2b] text-white px-8 py-4 font-semibold hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 hover:bg-[#5a0b23] shadow-md">
                 Sign In
@@ -377,7 +375,7 @@ export default function MyDealsPage() {
                             className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#6d0e2b] to-[#8a1a3f] text-white px-4 py-2.5 text-sm font-semibold hover:shadow-lg transition-all duration-200 hover:scale-105 shadow-md flex-1 min-w-0"
                             title="View and get this offer"
                           >
-                            Get Offer
+                            Claim
                           </a>
                           {status !== "approved" && (
                             <button

@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import Image from "next/image";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -74,35 +75,23 @@ export default function AdminDealsPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    const t = localStorage.getItem("admin_token");
-    if (!t) {
-      window.location.href = "/admin";
-      return;
-    }
-    setToken(t);
-    fetchDeals(t);
-    fetchCategories(t);
-    fetchSubmissions(t, "pending");
-  }, []);
-
-  async function fetchDeals(t) {
+  const fetchDeals = useCallback(async (t) => {
     const res = await fetch(`${API_BASE}/admin/deals`, {
       headers: { Authorization: `Bearer ${t}` },
     });
     const data = await res.json();
     if (res.ok) setDeals(data.deals || []);
-  }
-
-  async function fetchCategories(t) {
+  }, []);
+ 
+  const fetchCategories = useCallback(async (t) => {
     const res = await fetch(`${API_BASE}/admin/categories`, {
       headers: { Authorization: `Bearer ${t}` },
     });
     const data = await res.json();
     if (res.ok) setCategories(data.categories || []);
-  }
-
-  async function fetchSubmissions(t, status = submissionsStatus) {
+  }, []);
+ 
+  const fetchSubmissions = useCallback(async (t, status) => {
     try {
       setSubmissionsLoading(true);
       setSubmissionsError("");
@@ -117,7 +106,19 @@ export default function AdminDealsPage() {
     } finally {
       setSubmissionsLoading(false);
     }
-  }
+  }, []);
+ 
+  useEffect(() => {
+    const t = localStorage.getItem("admin_token");
+    if (!t) {
+      window.location.href = "/admin";
+      return;
+    }
+    setToken(t);
+    fetchDeals(t);
+    fetchCategories(t);
+    fetchSubmissions(t, "pending");
+  }, [fetchDeals, fetchCategories, fetchSubmissions]);
 
   async function handleSubmissionAction(id, action) {
     try {
@@ -555,9 +556,9 @@ export default function AdminDealsPage() {
                       {/* Preview area */}
                       <div className="w-full h-40 bg-slate-50 flex items-center justify-center">
                         {imagePreviewUrl ? (
-                          <img src={imagePreviewUrl} alt="Selected preview" className="w-full h-40 object-cover" />
+                          <Image src={imagePreviewUrl} alt="Selected preview" width={800} height={320} className="w-full h-40 object-cover" />
                         ) : currentImageUrl ? (
-                          <img src={currentImageUrl} alt="Current image" className="w-full h-40 object-cover" />
+                          <Image src={currentImageUrl} alt="Current image" width={800} height={320} className="w-full h-40 object-cover" />
                         ) : (
                           <div className="text-slate-400 text-sm">No image selected</div>
                         )}
@@ -904,9 +905,11 @@ export default function AdminDealsPage() {
                 {deals.map((deal) => (
                   <div key={deal.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all duration-300 group">
                     <div className="relative overflow-hidden">
-                      <img 
+                      <Image 
                         src={deal.imageUrl} 
                         alt={deal.title}
+                        width={800}
+                        height={384}
                         className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                       {deal.discountPct && (
@@ -1015,7 +1018,7 @@ export default function AdminDealsPage() {
                   <div key={s.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all duration-300 group">
                     <div className="relative overflow-hidden">
                       {s.imageUrl ? (
-                        <img src={s.imageUrl} alt={s.title || s.merchantName} className="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-300" />
+                        <Image src={s.imageUrl} alt={s.title || s.merchantName} width={800} height={352} className="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-300" />
                       ) : (
                         <div className="w-full h-44 bg-slate-100 flex items-center justify-center text-2xl">🖼️</div>
                       )}

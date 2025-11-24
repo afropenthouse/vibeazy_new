@@ -2,6 +2,7 @@
 import React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import Image from "next/image";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -24,14 +25,13 @@ function CategoryIcon({ name, active = false }) {
   else if (n.includes("local")) icon = "marker.png";
 
   return (
-    <img
+    <Image
       src={`${base}${icon}`}
       alt={name}
       width={16}
       height={16}
       loading="lazy"
       className="w-4 h-4 object-contain"
-      onError={(e) => { e.currentTarget.style.display = "none"; }}
     />
   );
 }

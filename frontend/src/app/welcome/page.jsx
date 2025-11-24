@@ -17,7 +17,7 @@ export default function WelcomePage() {
         className="w-full max-w-md rounded-2xl border border-foreground/10 bg-background/80 backdrop-blur p-6 shadow-xl text-center"
       >
         <h1 className="text-2xl font-bold">Welcome{user?.name ? `, ${user.name}` : "!"}</h1>
-        <p className="text-foreground/70 mt-2">You’re signed in. Jump to your saved favorites.</p>
+        <p className="text-foreground/70 mt-2">You&rsquo;re signed in. Jump to your saved favorites.</p>
         <div className="mt-6 flex items-center justify-center">
           <Link href="/saved" className="rounded-md bg-primary text-white px-4 py-2 text-sm hover:brightness-110">Saved Deals</Link>
         </div>

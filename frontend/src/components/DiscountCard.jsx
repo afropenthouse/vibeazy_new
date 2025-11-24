@@ -267,14 +267,14 @@ export default function DiscountCard({ item, compact = false }) {
                     className={(compact ? "px-3 py-2 text-xs" : "px-4 py-2.5 text-sm") + " inline-flex items-center rounded-xl bg-gradient-to-r from-primary to-primary/90 text-white hover:shadow-lg transition-all duration-200 hover:scale-105 font-semibold"}
                     aria-label={`Get offer from ${item.merchantName || item.title}`}
                   >
-                    <span>Get Offer</span>
+                    <span>Claim</span>
                   </a>
                 ) : (
                   <button
                     disabled
                     className={(compact ? "px-3 py-2 text-xs" : "px-4 py-2.5 text-sm") + " inline-flex items-center rounded-xl bg-primary/60 text-white cursor-not-allowed font-semibold"}
                   >
-                    Get Offer
+                    Claim
                   </button>
                 )}
               </div>

@@ -26,7 +26,7 @@ export default function SubscribePage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Subscription failed");
-      setSuccess("Subscribed. We’ll send you top deals.");
+      setSuccess("Subscribed. We&rsquo;ll send you top deals.");
       try { localStorage.setItem("emailSubscribeDone", "1"); } catch {}
     } catch (e) {
       setError(e.message || "Failed to subscribe");

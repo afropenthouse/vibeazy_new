@@ -88,7 +88,7 @@ export default function LoginPage() {
 
         {!!info && <p className="text-sm text-primary mt-3">{info}</p>}
         <p className="text-sm text-foreground/70 mt-4">
-          Don’t have an account? <Link href="/signup" className="text-primary hover:underline">Sign up</Link>
+          Don&rsquo;t have an account? <Link href="/signup" className="text-primary hover:underline">Sign up</Link>
         </p>
         <p className="text-xs text-foreground/60 mt-2">
           <Link href="/forgot-password" className="hover:underline">Forgot password?</Link>

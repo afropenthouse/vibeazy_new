@@ -58,7 +58,7 @@ export default function HomePage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Subscription failed");
-      setSubscribeSuccess("Thanks! We’ll send you top deals.");
+      setSubscribeSuccess("Thanks! We&rsquo;ll send you top deals.");
       setTimeout(() => setSubscribeOpen(false), 1200);
     } catch (err) {
       setSubscribeError(err.message || "Failed to subscribe");
@@ -82,7 +82,7 @@ export default function HomePage() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
             <h2 className="text-xl font-bold">Welcome{user?.name ? `, ${user.name}` : "!"}</h2>
-            <p className="text-foreground/70 mt-2">You’re signed in. Explore today’s deals below.</p>
+            <p className="text-foreground/70 mt-2">You&rsquo;re signed in. Explore today&rsquo;s deals below.</p>
             <div className="mt-4 flex items-center gap-3">
               <a href="#hot-deals" className="rounded-md bg-primary text-white px-4 py-2 text-sm hover:brightness-110">Browse Deals</a>
               <Link href="/saved" className="rounded-md border border-foreground/20 px-4 py-2 text-sm hover:bg-foreground/5">Saved Deals</Link>
