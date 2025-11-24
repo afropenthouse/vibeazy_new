@@ -108,19 +108,15 @@ export default function Highlights() {
       const tb = b.approvedAt ? Date.parse(b.approvedAt) : (b.createdAt ? Date.parse(b.createdAt) : 0);
       return tb - ta;
     });
-    const seventyFivePlus = arr.filter((d) => percent(d) >= 75);
-    const source = seventyFivePlus.length ? seventyFivePlus : arr;
-    const perCat = 2;
-    const max = 20;
+    const perCat = 10;
     const counts = {};
     const out = [];
-    for (const d of source) {
+    for (const d of arr) {
       const cat = String(d.category || "").toLowerCase();
       const c = counts[cat] || 0;
       if (c < perCat) {
         out.push(d);
         counts[cat] = c + 1;
-        if (out.length >= max) break;
       }
     }
     return out;

@@ -2,30 +2,30 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function SignupPage() {
   const router = useRouter();
   const { signup } = useAuth();
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('authModalOpen', { detail: { view: 'signup' } }));
+  }, []);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
+  const [phone, setPhone] = useState("");
   const [showPwd, setShowPwd] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
+  // Added missing confirm state to prevent runtime errors
+  const [confirm, setConfirm] = useState("");
+  const [showConfirm, setShowConfirm] = useState(false);
   const onSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    if (password !== confirm) {
-      setError("Passwords do not match");
-      return;
-    }
     try {
-      const res = await signup(name, email, password);
+      const res = await signup(name, email, password, phone);
       setSuccess("Signup successful! Please check your email to verify your account.");
       setTimeout(() => router.push("/login?check-email=1"), 2000);
     } catch (err) {
@@ -57,25 +57,8 @@ export default function SignupPage() {
             <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" className="mt-1 w-full rounded-md border border-foreground/10 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="you@example.com" />
           </div>
           <div>
-            <label className="text-sm">Password</label>
-            <div className="relative">
-              <input
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                type={showPwd ? "text" : "password"}
-                className="mt-1 w-full rounded-md border border-foreground/10 px-3 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-primary/30"
-                placeholder="••••••••"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPwd((s) => !s)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-foreground/60 hover:text-foreground"
-                aria-label={showPwd ? "Hide password" : "Show password"}
-                title={showPwd ? "Hide" : "Show"}
-              >
-                {showPwd ? "🙈" : "👁️"}
-              </button>
-            </div>
+            <label className="text-sm">Phone</label>
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" className="mt-1 w-full rounded-md border border-foreground/10 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="08012345678" />
           </div>
           <div>
             <label className="text-sm">Confirm Password</label>

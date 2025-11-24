@@ -14,8 +14,7 @@ export default function Header() {
   const menuRef = useRef(null);
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("All");
-
-  // Categories from backend
+  // removed local authModal state, using global event instead
   const [cats, setCats] = useState([]);
   useEffect(() => {
     let didCancel = false;
@@ -165,8 +164,8 @@ export default function Header() {
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <Link href="/login" className="inline-flex items-center rounded-full border border-foreground/20 text-foreground px-3 py-1.5 text-sm hover:bg-foreground/5">Login</Link>
-                <Link href="/signup" className="inline-flex items-center rounded-full bg-primary text-white px-3 py-1.5 text-sm hover:brightness-110">Sign up</Link>
+                <button onClick={() => window.dispatchEvent(new CustomEvent('authModalOpen', { detail: { view: 'login' } }))} className="inline-flex items-center rounded-full border border-foreground/20 text-foreground px-3 py-1.5 text-sm hover:bg-foreground/5">Login</button>
+                <button onClick={() => window.dispatchEvent(new CustomEvent('authModalOpen', { detail: { view: 'signup' } }))} className="inline-flex items-center rounded-full bg-primary text-white px-3 py-1.5 text-sm hover:brightness-110">Sign up</button>
               </div>
             )}
           </div>

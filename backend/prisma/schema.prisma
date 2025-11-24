@@ -12,6 +12,8 @@ model User {
   name          String
   email         String    @unique
   passwordHash  String
+  // Added phone to store user phone number (optional to avoid breaking existing rows)
+  phone         String?
   emailVerified Boolean   @default(false)
   createdAt     DateTime  @default(now())
   savedDeals    SavedDeal[]
@@ -146,4 +148,21 @@ model NewsletterSubscription {
   id        Int      @id @default(autoincrement())
   email     String   @unique
   createdAt DateTime @default(now())
+}
+
+model DealInterest {
+  id            Int                  @id @default(autoincrement())
+  user          User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId        Int?
+  deal          Deal?                @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  dealId        Int?
+  submission    UserDealSubmission?  @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  submissionId  Int?
+  createdAt     DateTime             @default(now())
+
+  // Ensure a user is only counted once per deal or submission
+  @@unique([userId, dealId])
+  @@unique([userId, submissionId])
+  @@index([dealId])
+  @@index([submissionId])
 }

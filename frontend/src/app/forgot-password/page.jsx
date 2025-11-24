@@ -1,8 +1,11 @@
 "use client";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function ForgotPasswordPage() {
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('authModalOpen', { detail: { view: 'forgot' } }));
+  }, []);
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState("");
 

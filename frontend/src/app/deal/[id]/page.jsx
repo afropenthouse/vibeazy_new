@@ -2,8 +2,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { DEALS_DATA } from "@/components/SearchFilter";
+import { useAuth } from "@/contexts/AuthContext";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -23,12 +24,23 @@ function mapApiDealToCard(d) {
   };
 }
 
-export default function DealDetailPage({ params }) {
+export default function DealDetailPage() {
   const router = useRouter();
-  const idNum = Number(params.id);
+  const { token } = useAuth();
+  const routeParams = useParams();
+  const idNum = Number(routeParams.id);
   const fallback = useMemo(() => DEALS_DATA.find((d) => Number(d.id) === idNum), [idNum]);
   const [deal, setDeal] = useState(fallback || null);
 
+  const trackInterestClick = async () => {
+    try {
+      const url = `${API_BASE}/deals/interest`;
+      const payload = { dealId: idNum };
+      const headers = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      await fetch(url, { method: "POST", headers, body: JSON.stringify(payload), keepalive: true });
+    } catch {}
+  };
   useEffect(() => {
     let didCancel = false;
     async function load() {
@@ -95,7 +107,7 @@ export default function DealDetailPage({ params }) {
 
           <div className="mt-6 flex flex-wrap gap-3">
             {deal.url ? (
-              <a href={deal.url} target="_blank" rel="noopener noreferrer" className="rounded-md bg-primary text-white px-4 py-2 text-sm hover:brightness-110">Get Offer</a>
+              <a href={deal.url} target="_blank" rel="noopener noreferrer" onClick={trackInterestClick} className="rounded-md bg-primary text-white px-4 py-2 text-sm hover:brightness-110">Get Offer</a>
             ) : (
               <button className="rounded-md bg-primary/60 text-white px-4 py-2 text-sm cursor-not-allowed">Get Offer</button>
             )}

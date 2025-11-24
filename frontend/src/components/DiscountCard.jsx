@@ -59,6 +59,17 @@ export default function DiscountCard({ item, compact = false }) {
     return item.expiresAt ? new Date(item.expiresAt).getTime() : null;
   });
   
+  // Track interest clicks for admin deals
+  const trackInterestClick = async () => {
+    try {
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/deals/interest`;
+      const payload = { dealId: item.id };
+      const headers = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      await fetch(url, { method: "POST", headers, body: JSON.stringify(payload), keepalive: true });
+    } catch {}
+  };
+  
   useEffect(() => {
     if (expiresAt == null) {
       const days = (item.id % 5) + 2;
@@ -192,50 +203,47 @@ export default function DiscountCard({ item, compact = false }) {
           >
             {compact ? (item.title || item.description) : item.description}
             </button>
-            {!compact && (
-              <div className={(item.place ? "justify-between" : "justify-end") + " flex items-center mt-1"}>
-                {item.place && (
-                  <div className="flex items-center gap-1">
-                    <svg className="w-3 h-3 text-foreground/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <p className="text-xs text-foreground/60">{item.place}</p>
-                  </div>
-                )}
-                <div className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] ${getExpiryBadgeClasses()}`} aria-live="polite">
-                  <span className="opacity-80">Expires</span>
-                  <span className="font-mono font-semibold">{timeLeft}</span>
+            {/* Show expiry badge also in compact mode */}
+            <div className={(item.place ? "justify-between" : "justify-end") + " flex items-center mt-1"}>
+              {(!compact && item.place) && (
+                <div className="flex items-center gap-1">
+                  <svg className="w-3 h-3 text-foreground/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <p className="text-xs text-foreground/60">{item.place}</p>
                 </div>
+              )}
+              <div className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] ${getExpiryBadgeClasses()}`} aria-live="polite">
+                <span className="opacity-80">Expires</span>
+                <span className="font-mono font-semibold">{timeLeft}</span>
               </div>
-            )}
+            </div>
           </div>
         </div>
 
-        {/* Secondary texts hidden on compact for clarity */}
-        {!compact && item.merchantName && (
-          <p className={(compact ? "text-xs" : "text-sm") + " text-foreground/70 line-clamp-2"}>{item.merchantName}</p>
+        {/* Show merchant name in both modes */}
+        {item.merchantName && (
+          <p className={(compact ? "text-xs" : "text-sm") + " text-foreground/70 " + (!compact ? "mb-4 line-clamp-2 flex-1" : "")}>{item.merchantName}</p>
         )}
         {!compact && item.title && (item.title.trim() !== (item.merchantName || "").trim()) && (
           <p className={(compact ? "text-xs" : "text-sm") + " text-foreground/70 mb-4 line-clamp-2 flex-1"}>{item.title}</p>
         )}
 
-        
-
         {/* Price and Action Section */}
-        {!compact && (item.priceCurrent || item.priceOriginal) && (
-          <div className={(compact ? "pt-3" : "pt-4") + " mt-auto border-t border-foreground/5"}>
+        {(item.priceCurrent || item.priceOriginal) && (
+          <div className={(compact ? "pt-2" : "pt-4") + " mt-auto border-t border-foreground/5"}>
             <div className="flex items-center justify-between">
               {/* Price Display */}
               <div className="flex flex-col">
                 <div className="flex items-baseline gap-2">
                   {typeof displayCurrent === "number" && (
-                    <span className={(compact ? "text-base" : "text-xl") + " font-bold text-primary price-current"}>
+                    <span className={(compact ? "text-sm" : "text-xl") + " font-bold text-primary price-current"}>
                       {formatNaira(displayCurrent)}
                     </span>
                   )}
                   {typeof displayOriginal === "number" && displayOriginal > displayCurrent && (
-                    <span className={(compact ? "text-xs" : "text-sm") + " text-foreground/40 line-through price-original"}>
+                    <span className={(compact ? "text-[11px]" : "text-sm") + " text-foreground/40 line-through price-original"}>
                       {formatNaira(displayOriginal)}
                     </span>
                   )}
@@ -255,6 +263,7 @@ export default function DiscountCard({ item, compact = false }) {
                     href={offerUrl}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={trackInterestClick}
                     className={(compact ? "px-3 py-2 text-xs" : "px-4 py-2.5 text-sm") + " inline-flex items-center rounded-xl bg-gradient-to-r from-primary to-primary/90 text-white hover:shadow-lg transition-all duration-200 hover:scale-105 font-semibold"}
                     aria-label={`Get offer from ${item.merchantName || item.title}`}
                   >

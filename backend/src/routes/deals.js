@@ -2,6 +2,7 @@ const express = require("express");
 const multer = require("multer");
 const auth = require("../middleware/auth");
 const { configureCloudinary } = require("../utils/cloudinary");
+const { verifyToken } = require("../utils/jwt");
 
 const router = express.Router();
 
@@ -188,6 +189,102 @@ router.patch("/my-submissions/:id", auth, async (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "Failed to update submission" });
+  }
+});
+
+// Track interest (click) for a deal or submission
+router.post("/interest", async (req, res) => {
+  const prisma = req.prisma;
+  const { dealId: rawDealId, submissionId: rawSubmissionId } = req.body || {};
+  const dealId = rawDealId != null ? Number(rawDealId) : null;
+  const submissionId = rawSubmissionId != null ? Number(rawSubmissionId) : null;
+  if (!dealId && !submissionId) return res.status(400).json({ error: "dealId or submissionId required" });
+
+  // Optional auth: associate interest to logged-in user if token exists
+  const auth = req.headers.authorization || "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
+  const decoded = token ? verifyToken(token) : null;
+  const userId = decoded?.id || null;
+
+  try {
+    if (userId && dealId) {
+      const existing = await prisma.dealInterest.findFirst({ where: { userId, dealId } });
+      if (existing) return res.json({ ok: true, existed: true });
+      const created = await prisma.dealInterest.create({ data: { userId, dealId } });
+      return res.json({ ok: true, interest: created });
+    }
+    if (userId && submissionId) {
+      const existing = await prisma.dealInterest.findFirst({ where: { userId, submissionId } });
+      if (existing) return res.json({ ok: true, existed: true });
+      const created = await prisma.dealInterest.create({ data: { userId, submissionId } });
+      return res.json({ ok: true, interest: created });
+    }
+    // Anonymous interest (no userId)
+    const created = await prisma.dealInterest.create({ data: { dealId: dealId || null, submissionId: submissionId || null } });
+    return res.json({ ok: true, interest: created });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: "Failed to record interest" });
+  }
+});
+
+// Get interest count for a deal or submission
+router.get("/interest/count", async (req, res) => {
+  const prisma = req.prisma;
+  const dealId = req.query.dealId != null ? Number(req.query.dealId) : null;
+  const submissionId = req.query.submissionId != null ? Number(req.query.submissionId) : null;
+  if (!dealId && !submissionId) return res.status(400).json({ error: "dealId or submissionId required" });
+  try {
+    const where = dealId ? { dealId } : { submissionId };
+    const total = await prisma.dealInterest.count({ where });
+    const users = await prisma.dealInterest.count({ where: { ...where, userId: { not: null } } });
+    res.json({ total, users });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to load interest count" });
+  }
+});
+
+// Aggregated counts for my submissions (unique logged-in users only)
+router.get("/interest/counts/my-submissions", auth, async (req, res) => {
+  const prisma = req.prisma;
+  try {
+    const subs = await prisma.userDealSubmission.findMany({ where: { userId: req.user.id }, select: { id: true } });
+    const ids = subs.map((s) => s.id);
+    const counts = {};
+    await Promise.all(
+      ids.map(async (sid) => {
+        const c = await prisma.dealInterest.count({ where: { submissionId: sid, userId: { not: null } } });
+        counts[sid] = c;
+      })
+    );
+    res.json({ counts });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to load interest counts" });
+  }
+});
+
+// List interested users (with phone numbers) for a submission owned by current user
+router.get("/interest/users/:submissionId", auth, async (req, res) => {
+  const prisma = req.prisma;
+  const submissionId = Number(req.params.submissionId);
+  if (!Number.isFinite(submissionId)) return res.status(400).json({ error: "Invalid submissionId" });
+  try {
+    const sub = await prisma.userDealSubmission.findUnique({ where: { id: submissionId } });
+    if (!sub || sub.userId !== req.user.id) return res.status(404).json({ error: "Submission not found" });
+    const interests = await prisma.dealInterest.findMany({
+      where: { submissionId, userId: { not: null } },
+      include: { user: true },
+      orderBy: { createdAt: "desc" },
+    });
+    const users = interests
+      .map((i) => ({ id: i.user?.id, name: i.user?.name || "", email: i.user?.email || "", phone: i.user?.phone || null }))
+      .filter((u) => u.id != null);
+    res.json({ users });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to load interested users" });
   }
 });
 

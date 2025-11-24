@@ -1,13 +1,17 @@
 "use client";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
+  // auto open modal and optionally navigate away
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('authModalOpen', { detail: { view: 'login' } }));
+  }, []);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
