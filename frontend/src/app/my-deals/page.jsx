@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import Image from "next/image";
 
@@ -17,7 +17,6 @@ export default function MyDealsPage() {
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
-  // Interest tracking state
   const [interestCounts, setInterestCounts] = useState({});
   const [messageOpen, setMessageOpen] = useState(false);
   const [messageSubmissionId, setMessageSubmissionId] = useState(null);
@@ -45,7 +44,9 @@ export default function MyDealsPage() {
         const data = await res.json();
         if (!cancelled) {
           if (!res.ok) throw new Error(data.error || "Failed to load");
-          setItems(Array.isArray(data.items) ? data.items : []);
+          // normalize incoming shape so we always have `deepLink` populated when possible
+          const normalize = (x) => ({ ...x, deepLink: x.deepLink || x.deep_link || x.url || null });
+          setItems(Array.isArray(data.items) ? data.items.map(normalize) : []);
         }
       } catch (e) {
         if (!cancelled) setError(e.message);
@@ -80,7 +81,8 @@ export default function MyDealsPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to refresh");
-      setItems(Array.isArray(data.items) ? data.items : []);
+      const normalize = (x) => ({ ...x, deepLink: x.deepLink || x.deep_link || x.url || null });
+      setItems(Array.isArray(data.items) ? data.items.map(normalize) : []);
     } catch (e) {
       setError(e.message);
       setToast("Failed to refresh deals");
@@ -127,12 +129,32 @@ export default function MyDealsPage() {
     setMessageSubmissionId(submissionId);
     setLoadingMessage(true);
     try {
-      const res = await fetch(`${API_BASE}/deals/interest/users/${submissionId}` , {
+      const subRes = await fetch(`${API_BASE}/deals/interest/users/${submissionId}` , {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to load users");
-      setMessageUsers(Array.isArray(data.users) ? data.users : []);
+      const subData = await subRes.json();
+      if (!subRes.ok) throw new Error(subData.error || "Failed to load users");
+      const bySubmission = Array.isArray(subData.users) ? subData.users : [];
+
+      const theItem = items.find((x) => x.id === submissionId) || null;
+      let byDeal = [];
+      if (theItem && theItem.dealId) {
+        const dealRes = await fetch(`${API_BASE}/deals/interest/users/by-deal/${theItem.dealId}` , {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const dealData = await dealRes.json();
+        if (dealRes.ok) byDeal = Array.isArray(dealData.users) ? dealData.users : [];
+      }
+
+      const seen = new Set();
+      const merged = [];
+      [...bySubmission, ...byDeal].forEach((u) => {
+        const key = u.id ?? u.email ?? Math.random();
+        if (seen.has(key)) return;
+        seen.add(key);
+        merged.push(u);
+      });
+      setMessageUsers(merged);
     } catch (e) {
       setToast(e.message || "Failed to load interested users");
       setMessageUsers([]);
@@ -244,11 +266,11 @@ export default function MyDealsPage() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 to-rose-50 py-8">
       <div className="mx-auto w-[95%] max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-slate-900 to-[#6d0e2b] bg-clip-text text-transparent mb-4">
+        <div className="mb-8">
+          <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-2">
             My Deals
           </h1>
-          <p className="text-slate-600 text-lg max-w-2xl mx-auto">Manage and track your submitted deals in one place</p>
+          <p className="text-slate-700 text-base max-w-2xl">Manage and track your submitted deals in one place</p>
         </div>
 
         {error && (
@@ -317,11 +339,7 @@ export default function MyDealsPage() {
                       </div>
                     )}
 
-                    <div className="absolute top-3 right-3">
-                      <button className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:shadow-lg hover:scale-110 transition-all duration-200">
-                        <span className="text-rose-600 text-sm">🔖</span>
-                      </button>
-                    </div>
+                    {/* bookmark icon removed */}
                   </div>
 
                   <div className="p-5">
@@ -329,10 +347,6 @@ export default function MyDealsPage() {
                       <div className="min-w-0 flex-1">
                         <p className="text-lg font-bold text-slate-800 truncate">{it.merchantName}</p>
                         <p className="text-sm text-slate-500 mt-1 flex items-center gap-2">
-                          <svg className="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 111.314 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
                           <span className="truncate">{it.city}</span>
                           {expiresAtStr && (
                             <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] bg-rose-50 text-rose-700 border border-rose-200 font-medium whitespace-nowrap">
@@ -347,7 +361,7 @@ export default function MyDealsPage() {
                       </div>
                     </div>
 
-                    <p className="text-slate-600 text-sm mt-2 line-clamp-2 leading-relaxed">{it.description || "No description provided"}</p>
+                    <p className="text-slate-700 text-sm mt-2 mb-2 break-words line-clamp-3">{it.description || "No description provided"}</p>
 
                     <div className="mt-5 pt-4 border-t border-slate-100">
                       <div className="mb-4 flex items-center justify-between">
@@ -361,38 +375,33 @@ export default function MyDealsPage() {
                             <div className="text-xl text-[#6d0e2b] font-bold">₦{newP.toLocaleString()}</div>
                           ) : null}
                         </div>
-                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-slate-100 border border-slate-200 text-xs text-slate-700">
-                          {interestCounts[it.id] || 0} users interested
-                        </span>
                       </div>
 
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-end justify-between gap-2">
                         <div className="flex gap-2">
-                          <a
-                            href={it.deepLink ? it.deepLink : `/deal/${it.id}`}
-                            {...(it.deepLink ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                            onClick={() => trackInterestClick({ submissionId: it.id })}
-                            className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#6d0e2b] to-[#8a1a3f] text-white px-4 py-2.5 text-sm font-semibold hover:shadow-lg transition-all duration-200 hover:scale-105 shadow-md flex-1 min-w-0"
-                            title="View and get this offer"
-                          >
-                            Claim
-                          </a>
+                         
                           {status !== "approved" && (
+              
                             <button
-                              className="inline-flex items-center justify-center rounded-xl bg-slate-800 text-white px-4 py-2.5 text-sm font-medium hover:bg-slate-700 transition-all duration-200 hover:shadow-md hover:scale-105 shadow"
+                              className="inline-flex items-center justify-center text-primary cursor-pointer px-4 py-2.5 text-sm font-medium duration-200"
                               onClick={() => beginEdit(it)}
                             >
                               Edit
                             </button>
                           )}
                         </div>
-                        <button
-                          className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 px-3 py-2.5 text-sm hover:bg-slate-50 transition-all duration-200 hover:shadow-md hover:border-slate-300 shadow-sm min-w-10"
-                          title="View interested users"
-                          onClick={() => openMessage(it.id)}
-                        >
-                          <span className="text-slate-500">💬</span>
-                        </button>
+                        <div className="flex flex-col items-end gap-2">
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs text-slate-700">
+                            {interestCounts[it.id] || 0} users interested
+                          </span>
+                          <button
+                            className="inline-flex items-center justify-center rounded-xl bg-primary text-slate-700 px-3 py-2.5 text-sm hover:bg-amber-300 transition-all duration-200 hover:shadow-md shadow-sm min-w-10"
+                            title="Send message"
+                            onClick={() => openMessage(it.id)}
+                          >
+                            <span className="text-white">Send message</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>

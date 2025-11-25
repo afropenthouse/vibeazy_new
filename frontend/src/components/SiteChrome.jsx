@@ -118,7 +118,7 @@ function AuthModal({ view, onClose }) {
       {view === 'login' && (
         <>
           <h2 className="text-2xl font-bold">Welcome back</h2>
-          <p className="text-foreground/70 mt-1">Log in to manage your favorite deals.</p>
+          <p className="text-foreground/70 mt-1">Login to share deals and discounts.</p>
           {status && <p className="text-sm text-red-500 mt-2">{status}</p>}
           <form className="mt-6 space-y-4" onSubmit={onLogin}>
             <div>

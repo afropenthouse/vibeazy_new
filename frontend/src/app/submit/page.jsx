@@ -19,6 +19,7 @@ function SubmitDealPageInner() {
   const [paymentRef, setPaymentRef] = useState("");
   const [successOpen, setSuccessOpen] = useState(false);
   const [form, setForm] = useState({
+    title: "",
     description: "",
     merchantName: "",
     category: "",
@@ -76,6 +77,41 @@ function SubmitDealPageInner() {
   }, []);
 
   const params = useSearchParams();
+
+  const submitDeal = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const token = localStorage.getItem("authToken");
+      const payload = {
+        ...form,
+        imageUrl,
+        city: "Lagos",
+        title: (form.title || "").slice(0, 31),
+        oldPrice: form.oldPrice ? Number(form.oldPrice) : undefined,
+        newPrice: form.newPrice ? Number(form.newPrice) : undefined,
+        paymentRef: paymentRef || undefined,
+      };
+      const res = await fetch(`${API_BASE}/deals/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ ...payload, paymentRef }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Submission failed");
+      setForm({ title: "", description: "", merchantName: "", category: "", oldPrice: "", newPrice: "", expiresAt: "", deepLink: "" });
+      setImageUrl("");
+      setPaid(false);
+      setPaymentRef("");
+      try { localStorage.removeItem("dealDraft"); } catch {}
+      setSuccessOpen(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [imageUrl, form, paymentRef]);
+
   useEffect(() => {
     const ref = params?.get("paymentRef");
     if (!ref) return;
@@ -179,39 +215,6 @@ function SubmitDealPageInner() {
       setUploading(false);
     }
   };
-
-  const submitDeal = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const token = localStorage.getItem("authToken");
-      const payload = {
-        ...form,
-        imageUrl,
-        city: "Lagos",
-        oldPrice: form.oldPrice ? Number(form.oldPrice) : undefined,
-        newPrice: form.newPrice ? Number(form.newPrice) : undefined,
-        paymentRef: paymentRef || undefined,
-      };
-      const res = await fetch(`${API_BASE}/deals/submit`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ ...payload, paymentRef }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Submission failed");
-      setForm({ description: "", merchantName: "", category: "", oldPrice: "", newPrice: "", expiresAt: "", deepLink: "" });
-      setImageUrl("");
-      setPaid(false);
-      setPaymentRef("");
-      try { localStorage.removeItem("dealDraft"); } catch {}
-      setSuccessOpen(true);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [imageUrl, form, paymentRef]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -364,6 +367,20 @@ function SubmitDealPageInner() {
                   ))}
                 </select>
               </div>
+            </div>
+
+            {/* Title */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Title
+              </label>
+              <input
+                value={form.title}
+                onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))}
+                maxLength={31}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                placeholder="Short title (e.g., Whole rotisserie chicken)"
+              />
             </div>
 
             {/* Pricing */}

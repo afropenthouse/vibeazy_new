@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
+import DiscountCard from "@/components/DiscountCard";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -13,6 +14,7 @@ export default function AdminDealsPage() {
   const [submissionsLoading, setSubmissionsLoading] = useState(false);
   const [submissionsError, setSubmissionsError] = useState("");
   const [form, setForm] = useState({
+    title: "",
     description: "",
     merchantName: "",
     city: "",
@@ -203,6 +205,7 @@ export default function AdminDealsPage() {
         ? Math.round(((oldP - newP) / oldP) * 100)
         : null;
       const payload = {
+        title: (form.title || "").slice(0, 31),
         description: form.description,
         merchantName: form.merchantName,
         city: form.city,
@@ -237,7 +240,7 @@ export default function AdminDealsPage() {
         await fetchDeals(token);
       }
       setForm({ 
-        description: "", merchantName: "", city: "", category: "", 
+        title: "", description: "", merchantName: "", city: "", category: "", 
         oldPrice: "", newPrice: "", discountPct: "", expiresAt: "", 
         deepLink: "", imageFile: null 
       });
@@ -256,6 +259,7 @@ export default function AdminDealsPage() {
     setEditingId(deal.id);
     setCurrentImageUrl(deal.imageUrl || "");
     setForm({
+      title: deal.title || "",
       description: deal.description || "",
       merchantName: deal.merchantName || "",
       city: deal.city || "",
@@ -428,7 +432,17 @@ export default function AdminDealsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Left Column */}
                 <div className="space-y-4">
-                  {/* Title removed (not displayed in UI) */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Title</label>
+                    <input
+                      name="title"
+                      value={form.title}
+                      onChange={handleChange}
+                      maxLength={31}
+                      className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
+                      placeholder="Short title (e.g., Whole rotisserie chicken)"
+                    />
+                  </div>
 
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
@@ -902,67 +916,31 @@ export default function AdminDealsPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {deals.map((deal) => (
-                  <div key={deal.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all duration-300 group">
-                    <div className="relative overflow-hidden">
-                      <Image 
-                        src={deal.imageUrl} 
-                        alt={deal.title}
-                        width={800}
-                        height={384}
-                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      {deal.discountPct && (
-                        <div className="absolute top-3 right-3 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
-                          {deal.discountPct}% OFF
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="p-5">
-                      <h3 className="font-semibold text-slate-800 line-clamp-2 mb-2 group-hover:text-primary transition-colors">
-                        {deal.title}
-                      </h3>
-                      
-                      <div className="flex items-center text-sm text-slate-600 mb-3">
-                        <span className="mr-3">🏪 {deal.merchantName}</span>
-                        <span>📍 {deal.city}</span>
-                      </div>
-
-                      {deal.description && (
-                        <p className="text-sm text-slate-600 line-clamp-2 mb-4">
-                          {deal.description}
-                        </p>
-                      )}
-
-                      {(deal.newPrice || deal.oldPrice) && (
-                        <div className="flex items-center justify-between mb-3">
-                          {deal.newPrice && (
-                            <span className="text-lg font-bold text-green-600">
-                              ₦{Number(deal.newPrice).toLocaleString()}
-                            </span>
-                          )}
-                          {deal.oldPrice && deal.newPrice && (
-                            <span className="text-sm text-slate-500 line-through">
-                              ₦{Number(deal.oldPrice).toLocaleString()}
-                            </span>
-                          )}
-                        </div>
-                      )}
-
-                      {deal.expiresAt && (
-                        <div className="text-xs text-slate-500 border-t border-slate-100 pt-3">
-                          Expires: {new Date(deal.expiresAt).toLocaleDateString()}
-                        </div>
-                      )}
-                      <div className="mt-4 flex items-center gap-2">
-                        <a href={deal.deepLink || "#"} target="_blank" rel="noopener" className="rounded-md bg-slate-100 text-slate-700 px-3 py-1.5 text-xs hover:bg-slate-200">Website</a>
+                {deals.map((deal) => {
+                  const item = {
+                    id: deal.id,
+                    category: deal.category || "",
+                    merchantName: deal.merchantName || "",
+                    title: deal.title || "",
+                    description: deal.description || "",
+                    place: deal.city || "",
+                    image: deal.imageUrl,
+                    priceOriginal: deal.oldPrice != null ? Number(deal.oldPrice) : undefined,
+                    priceCurrent: deal.newPrice != null ? Number(deal.newPrice) : undefined,
+                    discountPct: deal.discountPct != null ? Number(deal.discountPct) : undefined,
+                    expiresAt: deal.expiresAt || undefined,
+                    url: deal.deepLink || undefined,
+                  };
+                  return (
+                    <div key={deal.id} className="group">
+                      <DiscountCard item={item} />
+                      <div className="mt-2 flex items-center gap-2">
                         <button onClick={() => startEdit(deal)} className="rounded-md bg-blue-100 text-blue-700 px-3 py-1.5 text-xs hover:bg-blue-200">Edit</button>
                         <button onClick={() => askDelete(deal.id)} className="rounded-md bg-red-100 text-red-700 px-3 py-1.5 text-xs hover:bg-red-200">Delete</button>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

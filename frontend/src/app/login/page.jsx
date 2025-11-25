@@ -54,7 +54,7 @@ export default function LoginPage() {
         className="w-full max-w-md rounded-2xl border border-foreground/10 bg-background/80 backdrop-blur p-6 shadow-xl"
       >
         <h1 className="text-2xl font-bold">Welcome back</h1>
-        <p className="text-foreground/70 mt-1">Log in to manage your favorite deals.</p>
+        <p className="text-foreground/70 mt-1">Login to share deals and discounts.</p>
         {error && <p className="text-sm text-red-500 mt-2">{error}</p>}
 
         <form className="mt-6 space-y-4" onSubmit={onSubmit}>

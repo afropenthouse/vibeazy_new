@@ -137,7 +137,7 @@ export default function DiscountCard({ item, compact = false }) {
       <div className="relative overflow-hidden">
         <Image 
           src={item.image} 
-          alt={item.description || item.merchantName || item.title} 
+          alt={item.title || item.merchantName || item.description} 
           width={800} 
           height={600} 
           className={(compact ? "h-44" : "h-56") + " w-full object-cover transition-transform duration-500 group-hover:scale-105"} 
@@ -199,9 +199,9 @@ export default function DiscountCard({ item, compact = false }) {
             <button
             onClick={() => router.push(`/deal/${encodeURIComponent(item.id)}`)}
             className={(compact ? "text-sm" : "text-lg") + " block w-full truncate text-left font-bold text-foreground group-hover:text-primary transition-colors"}
-            aria-label={`View ${compact ? (item.title || item.description) : item.description}`}
+            aria-label={`View ${item.title}`}
           >
-            {compact ? (item.title || item.description) : item.description}
+            {item.title}
             </button>
             {/* Show expiry badge also in compact mode */}
             <div className={(item.place ? "justify-between" : "justify-end") + " flex items-center mt-1"}>
@@ -222,65 +222,63 @@ export default function DiscountCard({ item, compact = false }) {
           </div>
         </div>
 
-        {/* Show merchant name in both modes */}
-        {item.merchantName && (
-          <p className={(compact ? "text-xs" : "text-sm") + " text-foreground/70 " + (!compact ? "mb-4 line-clamp-2 flex-1" : "")}>{item.merchantName}</p>
+        {!compact && item.description && (
+          <p className={(compact ? "text-xs" : "text-sm") + " text-foreground/80 mb-3 break-words line-clamp-3"}>{item.description}</p>
         )}
-        {!compact && item.title && (item.title.trim() !== (item.merchantName || "").trim()) && (
-          <p className={(compact ? "text-xs" : "text-sm") + " text-foreground/70 mb-4 line-clamp-2 flex-1"}>{item.title}</p>
+        {item.merchantName && (
+          <p className={(compact ? "text-xs" : "text-xs") + " text-foreground/60 mb-4"}>{item.merchantName}</p>
         )}
 
         {/* Price and Action Section */}
-        {(item.priceCurrent || item.priceOriginal) && (
-          <div className={(compact ? "pt-2" : "pt-4") + " mt-auto border-t border-foreground/5"}>
-            <div className="flex items-center justify-between">
-              {/* Price Display */}
-              <div className="flex flex-col">
-                <div className="flex items-baseline gap-2">
-                  {typeof displayCurrent === "number" && (
-                    <span className={(compact ? "text-sm" : "text-xl") + " font-bold text-primary price-current"}>
-                      {formatNaira(displayCurrent)}
-                    </span>
-                  )}
-                  {typeof displayOriginal === "number" && displayOriginal > displayCurrent && (
-                    <span className={(compact ? "text-[11px]" : "text-sm") + " text-foreground/40 line-through price-original"}>
-                      {formatNaira(displayOriginal)}
-                    </span>
-                  )}
-                </div>
+        <div className={(compact ? "pt-2" : "pt-4") + " mt-auto border-t border-foreground/5"}>
+          <div className="flex items-center justify-between">
+            {/* Price Display */}
+            <div className="flex flex-col">
+              <div className="flex items-baseline gap-2">
+                {typeof displayCurrent === "number" && (
+                  <span className={(compact ? "text-sm" : "text-xl") + " font-bold text-primary price-current"}>
+                    {formatNaira(displayCurrent)}
+                  </span>
+                )}
                 {typeof displayOriginal === "number" && displayOriginal > displayCurrent && (
-                  <div className="flex items-center gap-1 mt-1">
-                    <span className={(compact ? "text-[11px]" : "text-xs") + " text-green-600 font-medium"}>
-                      Save {formatNaira(displayOriginal - displayCurrent)}
-                    </span>
-                  </div>
+                  <span className={(compact ? "text-[11px]" : "text-sm") + " text-foreground/40 line-through price-original"}>
+                    {formatNaira(displayOriginal)}
+                  </span>
                 )}
               </div>
+              {typeof displayOriginal === "number" && typeof displayCurrent === "number" && displayOriginal > displayCurrent && (
+                <div className="flex items-center gap-1 mt-1">
+                  <span className={(compact ? "text-[11px]" : "text-xs") + " text-green-600 font-medium"}>
+                    Save {formatNaira(displayOriginal - displayCurrent)}
+                  </span>
+                </div>
+              )}
+            </div>
 
-              <div className="flex items-center gap-2">
-                {offerUrl ? (
-                  <a
-                    href={offerUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={trackInterestClick}
-                    className={(compact ? "px-3 py-2 text-xs" : "px-4 py-2.5 text-sm") + " inline-flex items-center rounded-xl bg-gradient-to-r from-primary to-primary/90 text-white hover:shadow-lg transition-all duration-200 hover:scale-105 font-semibold"}
-                    aria-label={`Get offer from ${item.merchantName || item.title}`}
-                  >
-                    <span>Claim</span>
-                  </a>
-                ) : (
-                  <button
-                    disabled
-                    className={(compact ? "px-3 py-2 text-xs" : "px-4 py-2.5 text-sm") + " inline-flex items-center rounded-xl bg-primary/60 text-white cursor-not-allowed font-semibold"}
-                  >
-                    Claim
-                  </button>
-                )}
-              </div>
+            <div className="flex items-center gap-2">
+              {offerUrl ? (
+                <a
+                  href={offerUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={trackInterestClick}
+                  className={(compact ? "px-3 py-2 text-xs" : "px-4 py-2.5 text-sm") + " inline-flex items-center rounded-xl bg-gradient-to-r from-primary to-primary/90 text-white hover:shadow-lg transition-all duration-200 hover:scale-105 font-semibold"}
+                  aria-label={`Get offer from ${item.merchantName || item.title}`}
+                >
+                  <span>Claim</span>
+                </a>
+              ) : (
+                <button
+                  disabled
+                  className={(compact ? "px-3 py-2 text-xs" : "px-4 py-2.5 text-sm") + " inline-flex items-center rounded-xl bg-primary/60 text-white cursor-not-allowed font-semibold"}
+                >
+                  Claim
+                </button>
+              )}
             </div>
           </div>
-        )}
+        </div>
+        {/* End Price and Action Section */}
       </div>
     </motion.div>
   );

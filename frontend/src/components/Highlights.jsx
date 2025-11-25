@@ -5,6 +5,16 @@ import { DEALS_DATA } from "@/components/SearchFilter";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
+const toNumber = (v) => {
+  if (typeof v === "number") return v;
+  if (typeof v === "string") {
+    const cleaned = v.replace(/[\,\s]/g, "");
+    const n = Number(cleaned);
+    return Number.isFinite(n) ? n : undefined;
+  }
+  return undefined;
+};
+
 function mapApiDealToCard(d) {
   return {
     id: d.id,
@@ -14,10 +24,11 @@ function mapApiDealToCard(d) {
     description: d.description || "",
     place: d.city || "",
     image: d.imageUrl || "/placeholder.png",
-    priceOriginal: typeof d.oldPrice === "number" ? d.oldPrice : undefined,
-    priceCurrent: typeof d.newPrice === "number" ? d.newPrice : undefined,
+    priceOriginal: toNumber(d.oldPrice),
+    priceCurrent: toNumber(d.newPrice),
+    discountPct: toNumber(d.discountPct),
     expiresAt: d.expiresAt || undefined,
-    url: d.deepLink || undefined,
+    url: d.deepLink || d.deep_link || undefined,
     status: d.status || undefined,
     approvedAt: d.approvedAt || d.updatedAt || d.createdAt,
   };

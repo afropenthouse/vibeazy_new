@@ -249,13 +249,13 @@ router.get("/interest/count", async (req, res) => {
 router.get("/interest/counts/my-submissions", auth, async (req, res) => {
   const prisma = req.prisma;
   try {
-    const subs = await prisma.userDealSubmission.findMany({ where: { userId: req.user.id }, select: { id: true } });
-    const ids = subs.map((s) => s.id);
+    const subs = await prisma.userDealSubmission.findMany({ where: { userId: req.user.id }, select: { id: true, dealId: true } });
     const counts = {};
     await Promise.all(
-      ids.map(async (sid) => {
-        const c = await prisma.dealInterest.count({ where: { submissionId: sid, userId: { not: null } } });
-        counts[sid] = c;
+      subs.map(async (s) => {
+        const submissionClicks = await prisma.dealInterest.count({ where: { submissionId: s.id } });
+        const dealClicks = s.dealId ? await prisma.dealInterest.count({ where: { dealId: s.dealId } }) : 0;
+        counts[s.id] = submissionClicks + dealClicks;
       })
     );
     res.json({ counts });
@@ -275,6 +275,27 @@ router.get("/interest/users/:submissionId", auth, async (req, res) => {
     if (!sub || sub.userId !== req.user.id) return res.status(404).json({ error: "Submission not found" });
     const interests = await prisma.dealInterest.findMany({
       where: { submissionId, userId: { not: null } },
+      include: { user: true },
+      orderBy: { createdAt: "desc" },
+    });
+    const users = interests
+      .map((i) => ({ id: i.user?.id, name: i.user?.name || "", email: i.user?.email || "", phone: i.user?.phone || null }))
+      .filter((u) => u.id != null);
+    res.json({ users });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to load interested users" });
+  }
+});
+
+// List interested users for a Deal (approved submission mapped to a deal)
+router.get("/interest/users/by-deal/:dealId", auth, async (req, res) => {
+  const prisma = req.prisma;
+  const dealId = Number(req.params.dealId);
+  if (!Number.isFinite(dealId)) return res.status(400).json({ error: "Invalid dealId" });
+  try {
+    const interests = await prisma.dealInterest.findMany({
+      where: { dealId, userId: { not: null } },
       include: { user: true },
       orderBy: { createdAt: "desc" },
     });

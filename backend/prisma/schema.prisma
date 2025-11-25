@@ -21,6 +21,8 @@ model User {
   verificationTokens EmailVerificationToken[]
   submissions   UserDealSubmission[]
   payments      Payment[]
+  // Back-relation: users can have many interests (nullable foreign key on DealInterest)
+  interests     DealInterest[]
 }
 
 model SavedDeal {
@@ -91,6 +93,9 @@ model Deal {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
+  // Back-relation: interests pointing to this deal
+  interests      DealInterest[]
+
   @@index([isActive, expiresAt])
   @@index([city])
   @@index([category])
@@ -118,6 +123,9 @@ model UserDealSubmission {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   payments     Payment[]
+
+  // Back-relation: interests pointing to this submission
+  interests    DealInterest[]
 
   @@index([status])
   @@index([userId])
