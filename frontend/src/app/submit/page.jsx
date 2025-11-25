@@ -372,7 +372,7 @@ function SubmitDealPageInner() {
             {/* Title */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Title
+                Product name
               </label>
               <input
                 value={form.title}
@@ -408,13 +408,11 @@ function SubmitDealPageInner() {
                   />
                 </div>
                 <div>
-                  <input
-                    type="text"
-                    value={calculateDiscount() > 0 ? `${calculateDiscount()}% OFF` : ""}
-                    readOnly
-                    placeholder="You save"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50 text-center font-medium text-red-600"
-                  />
+                  {calculateDiscount() > 0 ? (
+                    <div className="text-sm text-red-600 font-medium text-center" aria-live="polite">
+                      {`${calculateDiscount()}% OFF`}
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>

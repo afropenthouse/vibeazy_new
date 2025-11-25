@@ -2,12 +2,15 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSavedDeals } from "@/contexts/SavedDealsContext";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 export default function Header() {
   const { isAuthenticated, user, logout } = useAuth();
+  const { savedList } = useSavedDeals();
+  const savedCount = Array.isArray(savedList) ? savedList.length : 0;
   const router = useRouter();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -119,8 +122,11 @@ export default function Header() {
             </div>
           </form>
           <div className="flex items-center gap-3">
-            <Link href="/saved" aria-label="Liked deals" className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-foreground/20 text-foreground hover:bg-foreground/5">
+            <Link href="/saved" aria-label="Saved deals" className="relative inline-flex items-center justify-center w-9 h-9 rounded-full border border-foreground/20 text-foreground hover:bg-foreground/5">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              {savedCount > 0 && (
+                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-white text-[10px] font-semibold">{savedCount}</span>
+              )}
             </Link>
             <button type="button" aria-label="Notifications" className="relative inline-flex items-center justify-center w-9 h-9 rounded-full border border-foreground/20 text-foreground hover:bg-foreground/5">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>

@@ -60,39 +60,63 @@ function useDeals() {
 }
 
 function Carousel({ title, items, compact = false }) {
+  const perPage = 4;
+  const [start, setStart] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  const visible = useMemo(() => {
+    if (!Array.isArray(items) || items.length === 0) return [];
+    const out = [];
+    for (let i = 0; i < perPage; i++) {
+      out.push(items[(start + i) % items.length]);
+    }
+    return out;
+  }, [items, start]);
+
+  useEffect(() => {
+    if (paused || items.length === 0) return;
+    const step = items.length > perPage ? perPage : 1;
+    const id = setInterval(() => {
+      setStart((s) => (s + step) % items.length);
+    }, 7000);
+    return () => clearInterval(id);
+  }, [paused, items.length]);
+
+  const go = (dir) => {
+    const step = items.length > perPage ? perPage : 1;
+    setStart((s) => (s + (dir > 0 ? step : -step) + items.length) % items.length);
+  };
   return (
     <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl sm:text-2xl font-bold">{title}</h2>
-        {/* arrows removed to match marquee-style behavior */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            aria-label="Previous"
+            onClick={() => go(-1)}
+            className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-slate-300 bg-white text-slate-700 hover:bg-slate-100"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <button
+            type="button"
+            aria-label="Next"
+            onClick={() => go(1)}
+            className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-slate-300 bg-white text-slate-700 hover:bg-slate-100"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m9 6 6 6-6 6"/></svg>
+          </button>
+        </div>
       </div>
-      <div className="overflow-hidden">
-        <div className="carousel-track" aria-hidden="false">
-          {[...items, ...items].map((item, idx) => (
-            <div
-              key={`${item.id}-${idx}`}
-              className={(compact
-                ? "min-w-[260px] sm:min-w-[280px] lg:min-w-[300px] w-[260px] sm:w-[280px] lg:w-[300px]"
-                : "min-w-[360px] sm:min-w-[400px] lg:min-w-[440px] w-[360px] sm:w-[400px] lg:w-[440px]") + " mr-4 inline-block align-top"}
-            >
+      <div className="overflow-hidden" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
+        <div className="grid grid-cols-4 gap-4">
+          {visible.map((item, idx) => (
+            <div key={`${item.id}-${start}-${idx}`} className="w-full">
               <DiscountCard item={item} compact={compact} />
             </div>
           ))}
         </div>
-        <style jsx>{`
-          .carousel-track {
-            display: inline-block;
-            white-space: nowrap;
-            will-change: transform;
-            /* make marquee slower for better readability */
-            animation: carousel-marquee 70s linear infinite;
-          }
-          .carousel-track:hover { animation-play-state: paused; }
-          @keyframes carousel-marquee {
-            0% { transform: translateX(0%); }
-            100% { transform: translateX(-50%); }
-          }
-        `}</style>
       </div>
     </section>
   );

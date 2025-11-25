@@ -433,7 +433,7 @@ export default function AdminDealsPage() {
                 {/* Left Column */}
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Title</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Product name</label>
                     <input
                       name="title"
                       value={form.title}
@@ -933,11 +933,12 @@ export default function AdminDealsPage() {
                   };
                   return (
                     <div key={deal.id} className="group">
-                      <DiscountCard item={item} />
-                      <div className="mt-2 flex items-center gap-2">
-                        <button onClick={() => startEdit(deal)} className="rounded-md bg-blue-100 text-blue-700 px-3 py-1.5 text-xs hover:bg-blue-200">Edit</button>
-                        <button onClick={() => askDelete(deal.id)} className="rounded-md bg-red-100 text-red-700 px-3 py-1.5 text-xs hover:bg-red-200">Delete</button>
-                      </div>
+                      <DiscountCard
+                        item={item}
+                        showInterestCount={true}
+                        onEdit={() => startEdit(deal)}
+                        onDelete={() => askDelete(deal.id)}
+                      />
                     </div>
                   );
                 })}

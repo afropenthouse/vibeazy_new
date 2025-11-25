@@ -21,6 +21,8 @@ model User {
   verificationTokens EmailVerificationToken[]
   submissions   UserDealSubmission[]
   payments      Payment[]
+  wallet        Wallet?
+  smsLogs       SmsLog[]
   // Back-relation: users can have many interests (nullable foreign key on DealInterest)
   interests     DealInterest[]
 }
@@ -123,6 +125,7 @@ model UserDealSubmission {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   payments     Payment[]
+  smsLogs      SmsLog[]
 
   // Back-relation: interests pointing to this submission
   interests    DealInterest[]
@@ -172,5 +175,30 @@ model DealInterest {
   @@unique([userId, dealId])
   @@unique([userId, submissionId])
   @@index([dealId])
+  @@index([submissionId])
+}
+
+model Wallet {
+  id           Int      @id @default(autoincrement())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       Int      @unique
+  balanceKobo  Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model SmsLog {
+  id            Int                 @id @default(autoincrement())
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        Int
+  submission    UserDealSubmission? @relation(fields: [submissionId], references: [id])
+  submissionId  Int?
+  message       String
+  recipients    Int
+  costKobo      Int
+  termiiMsgId   String?
+  createdAt     DateTime            @default(now())
+
+  @@index([userId])
   @@index([submissionId])
 }

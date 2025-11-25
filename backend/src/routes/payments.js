@@ -22,7 +22,6 @@ router.post("/init", auth, async (req, res) => {
 
   const reference = randomUUID();
   try {
-    const callback = process.env.APP_BASE_URL ? `${process.env.APP_BASE_URL}/payment/callback` : undefined;
     const resp = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
       headers: {
@@ -34,7 +33,6 @@ router.post("/init", auth, async (req, res) => {
         amount: amountKobo,
         reference,
         metadata: { ...(metadata || {}), userId: req.user.id },
-        callback_url: callback,
       }),
     });
     const data = await resp.json();
@@ -104,7 +102,23 @@ router.post("/verify", auth, async (req, res) => {
       },
     });
 
-    res.json({ payment: updated });
+    if (updated.status === "success" && !updated.used) {
+      const meta = updated.metadata || {};
+      const isWalletTopup = !!(meta.walletTopup || meta.purpose === "wallet_topup");
+      if (isWalletTopup) {
+        await prisma.$transaction([
+          prisma.wallet.upsert({
+            where: { userId: req.user.id },
+            update: { balanceKobo: { increment: updated.amountKobo } },
+            create: { userId: req.user.id, balanceKobo: updated.amountKobo },
+          }),
+          prisma.payment.update({ where: { reference }, data: { used: true, usedAt: new Date() } }),
+        ]);
+      }
+    }
+
+    const wallet = await prisma.wallet.findUnique({ where: { userId: req.user.id } }).catch(() => null);
+    res.json({ payment: updated, walletBalanceKobo: wallet?.balanceKobo ?? null });
   } catch (e) {
     console.error("Paystack verify error", e);
     res.status(500).json({ error: "Verification error" });

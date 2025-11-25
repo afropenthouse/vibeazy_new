@@ -134,7 +134,7 @@ function AuthModal({ view, onClose }) {
             </div>
             <button className="w-full rounded-md bg-primary text-white py-2">Login</button>
           </form>
-          <div className="mt-3 flex items-center justify-between">
+          <div className="mt-3 flex items-center justify-center gap-6">
             <button className="text-sm text-primary hover:underline" onClick={() => window.dispatchEvent(new CustomEvent('authModalOpen', { detail: { view: 'signup' } }))}>Sign up</button>
             <button className="text-xs text-foreground/70 hover:underline" onClick={() => window.dispatchEvent(new CustomEvent('authModalOpen', { detail: { view: 'forgot' } }))}>Forgot password?</button>
           </div>
@@ -168,7 +168,7 @@ function AuthModal({ view, onClose }) {
             </div>
             <button className="w-full rounded-md bg-primary text-white py-2">Sign up</button>
           </form>
-          <div className="mt-3 flex items-center justify-between">
+          <div className="mt-3 flex items-center justify-center">
             <button className="text-sm text-primary hover:underline" onClick={() => window.dispatchEvent(new CustomEvent('authModalOpen', { detail: { view: 'login' } }))}>Login</button>
           </div>
         </>
@@ -186,7 +186,7 @@ function AuthModal({ view, onClose }) {
             </div>
             <button className="w-full rounded-md bg-primary text-white py-2">Send Reset Link</button>
           </form>
-          <div className="mt-3 flex items-center justify-between">
+          <div className="mt-3 flex items-center justify-center">
             <button className="text-sm text-primary hover:underline" onClick={() => window.dispatchEvent(new CustomEvent('authModalOpen', { detail: { view: 'login' } }))}>Back to login</button>
           </div>
         </>

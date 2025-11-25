@@ -6,11 +6,12 @@ import { useSavedDeals } from "@/contexts/SavedDealsContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 
-export default function DiscountCard({ item, compact = false }) {
+export default function DiscountCard({ item, compact = false, showInterestCount = false, onEdit, onDelete }) {
   const { isSaved, toggle } = useSavedDeals();
   const { isAuthenticated, token } = useAuth();
   const router = useRouter();
   const saved = isSaved(item.id);
+  const [interestCount, setInterestCount] = useState(null);
 
   const formatNaira = (value) => {
     try {
@@ -36,6 +37,12 @@ export default function DiscountCard({ item, compact = false }) {
     if (diff <= 0) return 0;
     return Math.floor((diff / original) * 100);
   };
+
+  const toSlug = (s) => {
+    const base = String(s || "deal").toLowerCase();
+    return base.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  };
+  const detailPath = `/deal/${toSlug(item.title || item.merchantName || item.description || item.id)}`;
 
   const { original: displayOriginal, current: displayCurrent } = normalizePrices(
     item.priceOriginal,
@@ -69,6 +76,22 @@ export default function DiscountCard({ item, compact = false }) {
       await fetch(url, { method: "POST", headers, body: JSON.stringify(payload), keepalive: true });
     } catch {}
   };
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      if (!showInterestCount || !item?.id) return;
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/deals/interest/count?dealId=${encodeURIComponent(item.id)}`);
+        const data = await res.json();
+        if (!cancelled && res.ok) {
+          const n = Number(data?.users);
+          setInterestCount(Number.isFinite(n) ? n : 0);
+        }
+      } catch {}
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [showInterestCount, item?.id]);
   
   useEffect(() => {
     if (expiresAt == null) {
@@ -134,7 +157,7 @@ export default function DiscountCard({ item, compact = false }) {
       className={`discount-card group rounded-2xl border border-foreground/10 overflow-hidden bg-background shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col h-full hover:-translate-y-1 ${compact ? "" : ""}`}
     >
       {/* Image Section */}
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden cursor-pointer" onClick={() => router.push(detailPath)}>
         <Image 
           src={item.image} 
           alt={item.title || item.merchantName || item.description} 
@@ -158,7 +181,8 @@ export default function DiscountCard({ item, compact = false }) {
 
         {/* Save Button */}
         <button
-          onClick={async () => {
+          onClick={async (e) => {
+            e.stopPropagation();
             if (!isAuthenticated) {
               router.push("/login");
               return;
@@ -197,7 +221,7 @@ export default function DiscountCard({ item, compact = false }) {
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <button
-            onClick={() => router.push(`/deal/${encodeURIComponent(item.id)}`)}
+            onClick={() => router.push(detailPath)}
             className={(compact ? "text-sm" : "text-lg") + " block w-full truncate text-left font-bold text-foreground group-hover:text-primary transition-colors"}
             aria-label={`View ${item.title}`}
           >
@@ -215,8 +239,14 @@ export default function DiscountCard({ item, compact = false }) {
                 </div>
               )}
               <div className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] ${getExpiryBadgeClasses()}`} aria-live="polite">
-                <span className="opacity-80">Expires</span>
-                <span className="font-mono font-semibold">{timeLeft}</span>
+                {timeLeft === "Expired" ? (
+                  <span className="font-mono font-semibold">Expired</span>
+                ) : (
+                  <>
+                    <span className="opacity-80">Expires</span>
+                    <span className="font-mono font-semibold">{timeLeft}</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -255,13 +285,27 @@ export default function DiscountCard({ item, compact = false }) {
               )}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className={showInterestCount ? "flex flex-col items-end gap-1" : "flex items-center gap-2"}>
+              {showInterestCount && (
+                <span className={(compact ? "text-[11px]" : "text-xs") + " text-foreground/60 whitespace-nowrap min-h-[16px]"}>
+                  {(interestCount == null) ? "…" : `${interestCount} users interested`}
+                </span>
+              )}
               {offerUrl ? (
                 <a
                   href={offerUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={trackInterestClick}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!isAuthenticated) {
+                      e.preventDefault();
+                      window.dispatchEvent(new CustomEvent('authModalOpen', { detail: { view: 'signup' } }));
+                      return;
+                    }
+                    trackInterestClick();
+                  }}
+                  onClickCapture={(e)=>e.stopPropagation()}
                   className={(compact ? "px-3 py-2 text-xs" : "px-4 py-2.5 text-sm") + " inline-flex items-center rounded-xl bg-gradient-to-r from-primary to-primary/90 text-white hover:shadow-lg transition-all duration-200 hover:scale-105 font-semibold"}
                   aria-label={`Get offer from ${item.merchantName || item.title}`}
                 >
@@ -277,8 +321,29 @@ export default function DiscountCard({ item, compact = false }) {
               )}
             </div>
           </div>
+          {(onEdit || onDelete) && (
+            <div className="mt-2 flex items-center gap-2">
+              {onEdit && (
+                <button
+                  type="button"
+                  onClick={() => onEdit(item)}
+                  className="rounded-md bg-blue-100 text-blue-700 px-3 py-1.5 text-xs hover:bg-blue-200"
+                >
+                  Edit
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  type="button"
+                  onClick={() => onDelete(item)}
+                  className="rounded-md bg-red-100 text-red-700 px-3 py-1.5 text-xs hover:bg-red-200"
+                >
+                  Delete
+                </button>
+              )}
+            </div>
+          )}
         </div>
-        {/* End Price and Action Section */}
       </div>
     </motion.div>
   );

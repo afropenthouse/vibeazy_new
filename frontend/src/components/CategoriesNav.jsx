@@ -41,6 +41,7 @@ export default function CategoriesNav() {
   const [deals, setDeals] = React.useState([]);
   const params = useSearchParams();
   const activeCategory = params.get("category") || "All";
+  const scrollRef = React.useRef(null);
 
   const fetchCats = React.useCallback(async () => {
     try {
@@ -73,6 +74,33 @@ export default function CategoriesNav() {
     load();
     return () => { cancelled = true; };
   }, []);
+
+  React.useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const prefersReduced = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced) return;
+    let dir = 1;
+    let startTs = 0;
+    let rafId = 0;
+    const cycleMs = 7000;
+    const step = (ts) => {
+      if (!startTs) startTs = ts;
+      const max = Math.max(0, el.scrollWidth - el.clientWidth);
+      if (max === 0) return;
+      const t = Math.min(1, (ts - startTs) / cycleMs);
+      const from = dir === 1 ? 0 : max;
+      const to = dir === 1 ? max : 0;
+      el.scrollLeft = from + (to - from) * t;
+      if (t >= 1) {
+        startTs = ts;
+        dir = dir === 1 ? -1 : 1;
+      }
+      rafId = requestAnimationFrame(step);
+    };
+    rafId = requestAnimationFrame(step);
+    return () => { if (rafId) cancelAnimationFrame(rafId); };
+  }, [cats, deals]);
 
   const counts = React.useMemo(() => {
     const list = deals || [];
@@ -122,7 +150,7 @@ export default function CategoriesNav() {
     <div className="w-full bg-background border-b border-foreground/10 sticky top-20 z-40">
       <div className="mx-auto w-full max-w-none px-2 sm:px-4 lg:px-8">
         <nav className="relative py-3" aria-label="Top categories">
-          <div className="overflow-x-auto no-scrollbar">
+          <div className="overflow-x-auto no-scrollbar" ref={scrollRef}>
             <div className="flex flex-nowrap items-center gap-1 md:gap-2 justify-start whitespace-nowrap">
             {/* All option */}
             <Link

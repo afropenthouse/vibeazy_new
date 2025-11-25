@@ -22,6 +22,28 @@ export default function MyDealsPage() {
   const [messageSubmissionId, setMessageSubmissionId] = useState(null);
   const [messageUsers, setMessageUsers] = useState([]);
   const [loadingMessage, setLoadingMessage] = useState(false);
+  const [messageText, setMessageText] = useState("");
+  const [walletBalanceKobo, setWalletBalanceKobo] = useState(0);
+  const [topupOpen, setTopupOpen] = useState(false);
+  const [topupAmount, setTopupAmount] = useState(1000);
+  const [topupRef, setTopupRef] = useState("");
+  const [topupAuthUrl, setTopupAuthUrl] = useState("");
+  const [topupLoading, setTopupLoading] = useState(false);
+
+  const downloadCSV = () => {
+    const rows = [["Name", "Phone", "Email"], ...messageUsers.map((u) => [u.name || "", u.phone || "", u.email || ""])];
+    const esc = (v) => '"' + String(v).replace(/"/g, '""') + '"';
+    const csv = rows.map((r) => r.map(esc).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "interested_users.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   useEffect(() => {
     try {
@@ -129,6 +151,12 @@ export default function MyDealsPage() {
     setMessageSubmissionId(submissionId);
     setLoadingMessage(true);
     try {
+      // Load wallet balance for SMS
+      try {
+        const wRes = await fetch(`${API_BASE}/sms/wallet/me`, { headers: { Authorization: `Bearer ${token}` } });
+        const wData = await wRes.json();
+        if (wRes.ok) setWalletBalanceKobo(Number(wData.balanceKobo || 0));
+      } catch {}
       const subRes = await fetch(`${API_BASE}/deals/interest/users/${submissionId}` , {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -392,14 +420,14 @@ export default function MyDealsPage() {
                         </div>
                         <div className="flex flex-col items-end gap-2">
                           <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs text-slate-700">
-                            {interestCounts[it.id] || 0} users interested
+                            {(interestCounts[it.id] ?? 0)} user(s) interested
                           </span>
                           <button
-                            className="inline-flex items-center justify-center rounded-xl bg-primary text-slate-700 px-3 py-2.5 text-sm hover:bg-amber-300 transition-all duration-200 hover:shadow-md shadow-sm min-w-10"
+                            className="inline-flex items-center justify-center rounded-xl bg-primary text-white px-3 py-2.5 text-sm hover:bg-primary/90 transition-all duration-200 hover:shadow-md shadow-sm min-w-10"
                             title="Send message"
                             onClick={() => openMessage(it.id)}
                           >
-                            <span className="text-white">Send message</span>
+                            Send message
                           </button>
                         </div>
                       </div>
@@ -580,37 +608,160 @@ export default function MyDealsPage() {
         </div>
       )}
       {messageOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Interested Users</h3>
-              <button onClick={closeMessage} className="rounded-md px-3 py-1 bg-slate-100 hover:bg-slate-200">✕</button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-3xl bg-white/90 border border-white/60 shadow-2xl">
+            <div className="px-6 py-5 border-b border-slate-200/60 flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-bold text-slate-800">Message Interested Users</h3>
+                <p className="text-xs text-slate-600">Total: {messageUsers.length}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={downloadCSV} className="rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 text-sm">Download user info</button>
+                <button onClick={closeMessage} className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center">✕</button>
+              </div>
             </div>
-            {loadingMessage ? (
-              <p className="text-slate-600">Loading...</p>
-            ) : messageUsers.length === 0 ? (
-              <p className="text-slate-600">No users yet</p>
-            ) : (
-              <ul className="space-y-2 max-h-64 overflow-y-auto">
-                {messageUsers.map((u) => (
-                  <li key={u.id ?? u.email} className="flex items-center justify-between border border-slate-200 rounded-md px-3 py-2">
-                    <div>
-                      <p className="text-sm font-medium text-slate-800">{u.name || u.email || "Unknown user"}</p>
-                      {u.phone && <p className="text-xs text-slate-600">{u.phone}</p>}
-                    </div>
-                    {u.phone && (
-                      <button
-                        className="text-xs rounded-md bg-slate-100 px-2 py-1 hover:bg-slate-200"
-                        onClick={() => navigator.clipboard.writeText(u.phone)}
-                      >
-                        Copy
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-            <div className="mt-4 text-xs text-slate-600">Total interested users: {messageUsers.length}</div>
+            <div className="px-6 py-5 space-y-5">
+              {loadingMessage ? (
+                <div className="flex items-center gap-2 text-slate-600"><div className="w-5 h-5 border-2 border-[#6d0e2b] border-t-transparent rounded-full animate-spin"></div><span>Loading users...</span></div>
+              ) : messageUsers.length === 0 ? (
+                <div className="text-slate-700 text-sm">No users yet</div>
+              ) : (
+                <div className="text-slate-700 text-sm">Your message will be sent via SMS to interested users.</div>
+              )}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Your message</label>
+                <textarea
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                  rows={4}
+                  placeholder="Type a message to send to interested users"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-[#6d0e2b] focus:ring-2 focus:ring-[#6d0e2b]/20 transition-all duration-200 resize-none"
+                />
+              </div>
+            </div>
+              <div className="px-6 py-4 border-t border-slate-200/60 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-slate-700">Balance: ₦{(walletBalanceKobo/100).toLocaleString(undefined,{maximumFractionDigits:2})}</span>
+                <button
+                  onClick={() => { setTopupOpen(true); setTopupAmount(1000); setTopupRef(""); setTopupAuthUrl(""); }}
+                  className="rounded-xl bg-[#6d0e2b] text-white px-4 py-2 text-sm hover:brightness-110"
+                >Top up</button>
+              </div>
+              <button onClick={closeMessage} className="rounded-xl border border-slate-300 bg-white text-slate-700 px-5 py-2.5 font-medium hover:bg-slate-50">Close</button>
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await fetch(`${API_BASE}/sms/send`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                      body: JSON.stringify({ submissionId: messageSubmissionId, message: messageText }),
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                      setWalletBalanceKobo(Number(data.balanceKobo || 0));
+                      closeMessage();
+                      setToast("Message sent successfully");
+                    } else {
+                      setToast(data.error || "Failed to send SMS");
+                    }
+                  } catch {
+                    setToast("Failed to send SMS");
+                  }
+                }}
+                disabled={!messageText.trim() || walletBalanceKobo < ((messageUsers.filter(u=>!!u.phone).length || 1) * 1000)}
+                className="rounded-xl bg-[#6d0e2b] text-white px-5 py-2.5 font-semibold hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
+              >Send message</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {topupOpen && (
+        <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-xl">
+            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="font-semibold text-slate-800">Top up wallet</h3>
+              <button onClick={()=>setTopupOpen(false)} className="text-slate-500 hover:text-slate-700">✕</button>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Amount (₦)</label>
+                <input
+                  type="number"
+                  min={100}
+                  value={topupAmount}
+                  onChange={(e)=>setTopupAmount(Number(e.target.value || 0))}
+                  className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  placeholder="1000"
+                />
+                <p className="text-xs text-slate-500 mt-1">SMS costs ₦10 per recipient.</p>
+              </div>
+              {!!topupAuthUrl && (
+                <div className="rounded-lg border border-slate-200 p-3 text-sm text-slate-700">
+                  <p className="mb-2">A new tab opened for payment. Complete it, then click Verify below.</p>
+                  <a href={topupAuthUrl} target="_blank" rel="noopener noreferrer" className="text-primary underline">Open payment page</a>
+                </div>
+              )}
+            </div>
+            <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-end gap-3">
+              <button onClick={()=>setTopupOpen(false)} className="rounded-xl border border-slate-300 bg-white text-slate-700 px-5 py-2.5">Close</button>
+              <button
+                onClick={async ()=>{
+                  setTopupLoading(true);
+                  try {
+                    const res = await fetch(`${API_BASE}/payments/init`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                      body: JSON.stringify({ amount: topupAmount, metadata: { walletTopup: true } }),
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                      setTopupRef(String(data.reference || data.payment?.reference || ""));
+                      const url = data.authorizationUrl || data.data?.authorization_url || "";
+                      if (url) {
+                        setTopupAuthUrl(url);
+                        try { window.open(url, "_blank"); } catch {}
+                      }
+                    } else {
+                      setToast(data.error || "Failed to initialize payment");
+                    }
+                  } catch {
+                    setToast("Failed to initialize payment");
+                  } finally {
+                    setTopupLoading(false);
+                  }
+                }}
+                disabled={topupLoading || !topupAmount || topupAmount <= 0}
+                className="rounded-xl bg-primary text-white px-5 py-2.5 font-semibold hover:brightness-110 disabled:opacity-50"
+              >Pay</button>
+              <button
+                onClick={async ()=>{
+                  if (!topupRef) { setToast("Start payment first"); return; }
+                  setTopupLoading(true);
+                  try {
+                    const res = await fetch(`${API_BASE}/payments/verify`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                      body: JSON.stringify({ reference: topupRef }),
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                      const bk = Number(data.walletBalanceKobo ?? 0);
+                      if (bk) setWalletBalanceKobo(bk);
+                      setToast("Top up successful");
+                    } else {
+                      setToast(data.error || "Verification failed");
+                    }
+                  } catch {
+                    setToast("Verification failed");
+                  } finally {
+                    setTopupLoading(false);
+                  }
+                }}
+                disabled={topupLoading || !topupRef}
+                className="rounded-xl bg-emerald-600 text-white px-5 py-2.5 font-semibold hover:brightness-110 disabled:opacity-50"
+              >Verify</button>
+            </div>
           </div>
         </div>
       )}
