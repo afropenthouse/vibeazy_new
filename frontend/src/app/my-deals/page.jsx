@@ -358,7 +358,7 @@ export default function MyDealsPage() {
               const expiresAtStr = it.expiresAt ? new Date(it.expiresAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : null;
 
               return (
-                <div key={it.id} className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-md border border-white/80 overflow-hidden hover:shadow-lg transition-all duration-300 group">
+                <div key={it.id} className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-md border border-white/80 overflow-hidden hover:shadow-lg transition-all duration-300 group flex flex-col h-full">
                   <div className="relative h-44 sm:h-48 bg-gray-100 overflow-hidden">
                     <Image 
                       src={it.imageUrl} 
@@ -376,18 +376,17 @@ export default function MyDealsPage() {
                     {/* bookmark icon removed */}
                   </div>
 
-                  <div className="p-5">
+                  <div className="p-5 flex-1 flex flex-col">
                     <div className="flex items-start justify-between mb-3">
                       <div className="min-w-0 flex-1">
-                        <p className="text-lg font-bold text-slate-800 truncate">{it.merchantName}</p>
-                        <p className="text-sm text-slate-500 mt-1 flex items-center gap-2">
-                          <span className="truncate">{it.city}</span>
-                          {expiresAtStr && (
+                        <p className="text-lg font-bold text-slate-800 truncate">{it.title || "Untitled deal"}</p>
+                        {expiresAtStr && (
+                          <div className="mt-1">
                             <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] bg-rose-50 text-rose-700 border border-rose-200 font-medium whitespace-nowrap">
                               Expires {expiresAtStr}
                             </span>
-                          )}
-                        </p>
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex-shrink-0 ml-2">
@@ -397,7 +396,7 @@ export default function MyDealsPage() {
 
                     <p className="text-slate-700 text-sm mt-2 mb-2 break-words line-clamp-3">{it.description || "No description provided"}</p>
 
-                    <div className="mt-5 pt-4 border-t border-slate-100">
+                    <div className="mt-auto pt-4 border-t border-slate-100">
                       <div className="mb-4 flex items-center justify-between">
                         <div>
                           <div className="text-sm text-slate-700 mb-2">
@@ -413,9 +412,7 @@ export default function MyDealsPage() {
 
                       <div className="flex items-end justify-between gap-2">
                         <div className="flex gap-2">
-                         
                           {status !== "approved" && (
-              
                             <button
                               className="inline-flex items-center justify-center text-primary cursor-pointer px-4 py-2.5 text-sm font-medium duration-200"
                               onClick={() => beginEdit(it)}
@@ -652,9 +649,12 @@ export default function MyDealsPage() {
                 )}
               </div>
             </div>
-              <div className="px-6 py-4 border-t border-slate-200/60 flex items-center justify-between gap-3">
+            <div className="px-6 py-4 border-t border-slate-200/60 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <span className="text-sm text-slate-700">Balance: ₦{(walletBalanceKobo/100).toLocaleString(undefined,{maximumFractionDigits:2})}</span>
+                <div className="flex flex-col leading-tight">
+                  <span className="text-sm text-slate-700">Balance: ₦{(walletBalanceKobo/100).toLocaleString(undefined,{maximumFractionDigits:2})}</span>
+                  <span className="text-xs text-slate-600">Messages left: {Math.floor(walletBalanceKobo / SMS_COST_KOBO).toLocaleString()}</span>
+                </div>
                 <button
                   onClick={() => { setTopupOpen(true); setTopupAmount(1000); setTopupRef(""); setTopupAuthUrl(""); }}
                   className="rounded-xl bg-[#6d0e2b] text-white px-4 py-2 text-sm hover:brightness-110"

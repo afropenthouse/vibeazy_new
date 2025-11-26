@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Vibeazy - Find Promos & Deals from your Favorite Restaurants!",
-  description: "Find Promos & Deals from your Favorite Restaurants!",
+  title: "Vibeazy - Find All  Deals & Discounts Across Nigeria!",
+  description: "Find All  Deals & Discounts Across Nigeria!",
 };
 
 export default function RootLayout({ children }) {

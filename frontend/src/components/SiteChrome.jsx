@@ -144,7 +144,7 @@ function AuthModal({ view, onClose }) {
       {view === 'signup' && (
         <>
           <h2 className="text-2xl font-bold">Create your account</h2>
-          <p className="text-foreground/70 mt-1">Start saving with beautiful deals today.</p>
+          <p className="text-foreground/70 mt-1">Find all  deals & discounts across nigeria.</p>
           {status && <p className="text-sm text-red-500 mt-2">{status}</p>}
           <form className="mt-6 space-y-4" onSubmit={onSignup}>
             <div>
