@@ -23,6 +23,7 @@ router.post("/init", auth, async (req, res) => {
 
   const reference = randomUUID();
   try {
+    const webBase = (process.env.WEB_URL || process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3000").replace(/\/+$/, "");
     const resp = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
       headers: {
@@ -34,6 +35,7 @@ router.post("/init", auth, async (req, res) => {
         amount: amountKobo,
         reference,
         metadata: { ...(metadata || {}), userId: req.user.id },
+        callback_url: `${webBase}/payment/callback`,
       }),
     });
     const data = await resp.json();
