@@ -66,14 +66,20 @@ export default function DiscountCard({ item, compact = false, showInterestCount 
     return item.expiresAt ? new Date(item.expiresAt).getTime() : null;
   });
   
-  // Track interest clicks for admin deals
+  // Track interest reliably even when navigating away
   const trackInterestClick = async () => {
     try {
       const url = `${process.env.NEXT_PUBLIC_API_URL}/deals/interest`;
       const payload = { dealId: item.id };
+      const json = JSON.stringify(payload);
+      if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
+        const blob = new Blob([json], { type: "application/json" });
+        navigator.sendBeacon(url, blob);
+        return;
+      }
       const headers = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
-      await fetch(url, { method: "POST", headers, body: JSON.stringify(payload), keepalive: true });
+      await fetch(url, { method: "POST", headers, body: json, keepalive: true });
     } catch {}
   };
   useEffect(() => {

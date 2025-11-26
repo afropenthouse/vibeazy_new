@@ -5,13 +5,11 @@
   "main": "src/server.js",
   "scripts": {
     "dev": "nodemon src/server.js",
-    "start": "prisma migrate deploy && node src/server.js",
+    "start": "node src/server.js",
     "build": "echo 'Backend build complete'",
     "lint": "echo 'Linting backend code...'",
     "test": "echo 'Running backend tests...'",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev --name init",
-    "prisma:seed": "prisma db seed",
     "postinstall": "prisma generate"
   },
   "dependencies": {
