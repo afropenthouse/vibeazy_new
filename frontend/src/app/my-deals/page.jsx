@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Image from "next/image";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const SMS_COST_KOBO = Number(process.env.NEXT_PUBLIC_SMS_COST_KOBO || 1000);
 
 export default function MyDealsPage() {
   const { isAuthenticated, user } = useAuth();
@@ -23,6 +24,8 @@ export default function MyDealsPage() {
   const [messageUsers, setMessageUsers] = useState([]);
   const [loadingMessage, setLoadingMessage] = useState(false);
   const [messageText, setMessageText] = useState("");
+  const [messageSending, setMessageSending] = useState(false);
+  const [messageError, setMessageError] = useState("");
   const [walletBalanceKobo, setWalletBalanceKobo] = useState(0);
   const [topupOpen, setTopupOpen] = useState(false);
   const [topupAmount, setTopupAmount] = useState(1000);
@@ -149,6 +152,8 @@ export default function MyDealsPage() {
   const openMessage = async (submissionId) => {
     setMessageOpen(true);
     setMessageSubmissionId(submissionId);
+    setMessageText("");
+    setMessageError("");
     setLoadingMessage(true);
     try {
       // Load wallet balance for SMS
@@ -195,6 +200,7 @@ export default function MyDealsPage() {
     setMessageOpen(false);
     setMessageSubmissionId(null);
     setMessageUsers([]);
+    setMessageError("");
   };
 
   // Load interest counts after items load
@@ -637,6 +643,13 @@ export default function MyDealsPage() {
                   placeholder="Type a message to send to interested users"
                   className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-[#6d0e2b] focus:ring-2 focus:ring-[#6d0e2b]/20 transition-all duration-200 resize-none"
                 />
+                <div className="text-xs text-slate-600 mt-2">Total interested: {(interestCounts[messageSubmissionId] ?? 0)} • SMS recipients: {messageUsers.filter(u=>!!u.phone).length}</div>
+                {messageUsers.filter(u=>!!u.phone).length === 0 && (
+                  <div className="text-xs text-red-600 mt-2">No recipients with phone numbers.</div>
+                )}
+                {!!messageError && (
+                  <div className="text-xs text-red-600 mt-2">{messageError}</div>
+                )}
               </div>
             </div>
               <div className="px-6 py-4 border-t border-slate-200/60 flex items-center justify-between gap-3">
@@ -650,6 +663,8 @@ export default function MyDealsPage() {
               <button onClick={closeMessage} className="rounded-xl border border-slate-300 bg-white text-slate-700 px-5 py-2.5 font-medium hover:bg-slate-50">Close</button>
               <button
                 onClick={async () => {
+                  setMessageError("");
+                  setMessageSending(true);
                   try {
                     const res = await fetch(`${API_BASE}/sms/send`, {
                       method: "POST",
@@ -662,13 +677,17 @@ export default function MyDealsPage() {
                       closeMessage();
                       setToast("Message sent successfully");
                     } else {
+                      setMessageError(data.error || "Failed to send SMS");
                       setToast(data.error || "Failed to send SMS");
                     }
                   } catch {
+                    setMessageError("Failed to send SMS");
                     setToast("Failed to send SMS");
+                  } finally {
+                    setMessageSending(false);
                   }
                 }}
-                disabled={!messageText.trim() || walletBalanceKobo < ((messageUsers.filter(u=>!!u.phone).length || 1) * 1000)}
+                disabled={messageSending || !messageText.trim() || (messageUsers.filter(u=>!!u.phone).length === 0) || walletBalanceKobo < (messageUsers.filter(u=>!!u.phone).length * SMS_COST_KOBO)}
                 className="rounded-xl bg-[#6d0e2b] text-white px-5 py-2.5 font-semibold hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
               >Send message</button>
             </div>
