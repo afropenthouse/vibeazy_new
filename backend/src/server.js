@@ -22,18 +22,7 @@ const ALLOWED_ORIGINS = Array.from(new Set(
 ));
 console.log("CORS allowed origins:", ALLOWED_ORIGINS);
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like curl, server-side requests)
-      if (!origin) return callback(null, true);
-      if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
-      console.warn(`Blocked CORS request from origin: ${origin}`);
-      return callback(new Error("Not allowed by CORS"), false);
-    },
-    credentials: true,
-  })
-);
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 
 // Attach prisma to request for route handlers --
