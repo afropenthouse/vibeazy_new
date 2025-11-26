@@ -1,6 +1,7 @@
 const express = require("express");
 const auth = require("../middleware/auth");
 const { randomUUID } = require("crypto");
+const fetch = global.fetch || ((...args) => import("node-fetch").then(({ default: f }) => f(...args)));
 
 const router = express.Router();
 

@@ -64,16 +64,10 @@ function SubmitDealPageInner() {
   }, []);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("dealDraft");
-      if (raw) {
-        const d = JSON.parse(raw);
-        if (d && typeof d === "object") {
-          setForm((f) => ({ ...f, ...d }));
-          if (d.imageUrl) setImageUrl(d.imageUrl);
-        }
-      }
-    } catch {}
+    setForm({ title: "", description: "", merchantName: "", category: "", oldPrice: "", newPrice: "", expiresAt: "", deepLink: "" });
+    setImageUrl("");
+    setPaid(false);
+    setPaymentRef("");
   }, []);
 
   const params = useSearchParams();
@@ -103,7 +97,10 @@ function SubmitDealPageInner() {
       setImageUrl("");
       setPaid(false);
       setPaymentRef("");
-      try { localStorage.removeItem("dealDraft"); } catch {}
+      try {
+        if (paymentRef) localStorage.removeItem(`dealDraft:${paymentRef}`);
+        localStorage.removeItem("autoSubmitAfterPay");
+      } catch {}
       setSuccessOpen(true);
     } catch (err) {
       setError(err.message);
@@ -130,11 +127,20 @@ function SubmitDealPageInner() {
           setPaid(true);
           setError("");
           try {
-            const raw = localStorage.getItem("dealDraft");
+            const raw = localStorage.getItem(`dealDraft:${ref}`);
             if (raw) {
               const draft = JSON.parse(raw);
               if (draft && typeof draft === "object") {
-                setForm((f) => ({ ...f, ...draft }));
+                setForm({
+                  title: draft.title || "",
+                  description: draft.description || "",
+                  merchantName: draft.merchantName || "",
+                  category: draft.category || "",
+                  oldPrice: draft.oldPrice || "",
+                  newPrice: draft.newPrice || "",
+                  expiresAt: draft.expiresAt || "",
+                  deepLink: draft.deepLink || "",
+                });
                 if (draft.imageUrl) setImageUrl(draft.imageUrl);
               }
             }
@@ -236,8 +242,9 @@ function SubmitDealPageInner() {
     }
     try {
       try {
+        const refKey = paymentRef || "pending";
         const draft = { ...form, imageUrl };
-        localStorage.setItem("dealDraft", JSON.stringify(draft));
+        localStorage.setItem(`dealDraft:${refKey}`, JSON.stringify(draft));
       } catch {}
       const token = localStorage.getItem("authToken");
       const res = await fetch(`${API_BASE}/payments/init`, {
@@ -248,6 +255,10 @@ function SubmitDealPageInner() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Payment init failed");
       setPaymentRef(data.reference || "");
+      try {
+        const draft = { ...form, imageUrl };
+        localStorage.setItem(`dealDraft:${data.reference}`, JSON.stringify(draft));
+      } catch {}
       window.location.href = data.authorizationUrl;
     } catch (e) {
       setError(e.message || "Payment error");
