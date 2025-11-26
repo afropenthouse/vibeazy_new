@@ -40,13 +40,31 @@ router.post("/send", authMiddleware, async (req, res) => {
   const message = String(req.body?.message || "").trim();
   if (!submissionId || !message) return res.status(400).json({ error: "Missing fields" });
 
-  const interests = await prisma.dealInterest.findMany({
+  const submission = await prisma.userDealSubmission.findUnique({ where: { id: submissionId } });
+  if (!submission || submission.userId !== req.user.id) {
+    return res.status(404).json({ error: "Submission not found" });
+  }
+
+  const interestsBySubmission = await prisma.dealInterest.findMany({
     where: { submissionId },
     include: { user: true },
   });
-  const numbers = interests
+  let interestsByDeal = [];
+  if (submission.dealId) {
+    interestsByDeal = await prisma.dealInterest.findMany({
+      where: { dealId: submission.dealId },
+      include: { user: true },
+    });
+  }
+  const seen = new Set();
+  const numbers = [...interestsBySubmission, ...interestsByDeal]
     .map((i) => sanitizeMsisdn(i.user?.phone))
-    .filter((n) => !!n);
+    .filter((n) => {
+      if (!n) return false;
+      if (seen.has(n)) return false;
+      seen.add(n);
+      return true;
+    });
   const recipients = numbers.length;
   if (recipients === 0) return res.status(400).json({ error: "No recipients with phone numbers" });
 
