@@ -128,10 +128,7 @@ export default function Header() {
                 <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-white text-[10px] font-semibold">{savedCount}</span>
               )}
             </Link>
-            <button type="button" aria-label="Notifications" className="relative inline-flex items-center justify-center w-9 h-9 rounded-full border border-foreground/20 text-foreground hover:bg-foreground/5">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-              <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-white text-[10px] font-semibold">10</span>
-            </button>
+            <NotificationsDropdown />
             {isAuthenticated ? (
               <div className="flex items-center gap-2">
                 <div ref={menuRef} className="relative">
@@ -178,6 +175,107 @@ export default function Header() {
         </div>
       </div>
     </header>
+  );
+}
+
+function NotificationsDropdown() {
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState([]);
+  const [count, setCount] = useState(0);
+  const ref = useRef(null);
+  useEffect(() => {
+    let didCancel = false;
+    const load = () => {
+      try {
+        const raw = localStorage.getItem("notifications");
+        let list = raw ? JSON.parse(raw) : [];
+        if (!Array.isArray(list) || list.length === 0) {
+          list = [
+            { id: "n1", title: "Welcome to Vibeazy", message: "Enjoy the best deals — start saving today.", createdAt: new Date().toISOString(), read: false },
+            { id: "n2", title: "Explore Highlights", message: "New discounts added daily. Check Top Deals.", createdAt: new Date().toISOString(), read: false },
+          ];
+        }
+        if (!didCancel) {
+          setItems(list);
+          const unread = list.filter((n) => !n.read).length;
+          setCount(unread);
+        }
+        try { localStorage.setItem("notifications", JSON.stringify(list)); } catch {}
+      } catch {}
+    };
+    load();
+    const onUpdate = () => load();
+    window.addEventListener("notificationsUpdated", onUpdate);
+    const onDocClick = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", onDocClick);
+    return () => { didCancel = true; window.removeEventListener("notificationsUpdated", onUpdate); document.removeEventListener("mousedown", onDocClick); };
+  }, []);
+  const markAllRead = () => {
+    const next = items.map((n) => ({ ...n, read: true }));
+    setItems(next);
+    setCount(0);
+    try { localStorage.setItem("notifications", JSON.stringify(next)); } catch {}
+    window.dispatchEvent(new CustomEvent("notificationsUpdated"));
+  };
+  const clearAll = () => {
+    setItems([]);
+    setCount(0);
+    try { localStorage.setItem("notifications", JSON.stringify([])); } catch {}
+    window.dispatchEvent(new CustomEvent("notificationsUpdated"));
+  };
+  const toggleRead = (id) => {
+    const next = items.map((n) => (n.id === id ? { ...n, read: !n.read } : n));
+    setItems(next);
+    const unread = next.filter((n) => !n.read).length;
+    setCount(unread);
+    try { localStorage.setItem("notifications", JSON.stringify(next)); } catch {}
+    window.dispatchEvent(new CustomEvent("notificationsUpdated"));
+  };
+  return (
+    <div ref={ref} className="relative">
+      <button type="button" aria-label="Notifications" onClick={() => setOpen((o) => !o)} className="relative inline-flex items-center justify-center w-9 h-9 rounded-full border border-foreground/20 text-foreground hover:bg-foreground/5">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        {count > 0 && (
+          <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-white text-[10px] font-semibold">{count}</span>
+        )}
+      </button>
+      {open && (
+        <div className="absolute right-0 mt-2 w-96 rounded-2xl border border-white/50 bg-white shadow-2xl">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-foreground/10">
+            <span className="text-sm font-semibold text-foreground">Notifications</span>
+            <div className="flex items-center gap-2">
+              <button onClick={markAllRead} className="text-xs rounded-full border border-foreground/20 px-3 py-1 hover:bg-foreground/5">Mark all read</button>
+              <button onClick={clearAll} className="text-xs rounded-full border border-foreground/20 px-3 py-1 hover:bg-foreground/5">Clear</button>
+            </div>
+          </div>
+          {items.length === 0 ? (
+            <div className="px-4 py-6 text-sm text-foreground/70">No notifications</div>
+          ) : (
+            <ul className="max-h-80 overflow-auto p-3 space-y-3">
+              {items.map((n) => (
+                <li key={n.id} className={`rounded-xl px-4 py-3 text-sm border shadow-sm ${n.read ? "bg-foreground/5 border-foreground/10" : "bg-primary/10 border-primary/20"}`}>
+                  <div className="flex items-start gap-3">
+                    <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full ${n.read ? "bg-foreground/10 text-foreground/60" : "bg-primary text-white"}`}>🔔</span>
+                    <div className="flex-1">
+                      <div className="font-semibold text-foreground">{n.title}</div>
+                      <div className="text-foreground/80">{n.message}</div>
+                      <div className="mt-1 text-[11px] text-foreground/60 flex items-center justify-between">
+                        <span>{new Date(n.createdAt).toLocaleString()}</span>
+                        <button onClick={() => toggleRead(n.id)} className="underline hover:no-underline">{n.read ? "Mark unread" : "Mark read"}</button>
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="px-4 py-3 border-t border-foreground/10 bg-foreground/5 flex items-center justify-between">
+            <Link href="/#hot-deals" className="inline-flex items-center rounded-full bg-primary text-white px-3 py-1.5 text-xs hover:brightness-110">View Top Deals</Link>
+            <Link href="/submit" className="inline-flex items-center rounded-full border border-foreground/20 text-foreground px-3 py-1.5 text-xs hover:bg-foreground/5">Submit a Deal</Link>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

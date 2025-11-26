@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { DEALS_DATA } from "@/components/SearchFilter";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSavedDeals } from "@/contexts/SavedDealsContext";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -17,8 +18,8 @@ function mapApiDealToCard(d) {
     description: d.description || "",
     place: d.city || "",
     image: d.imageUrl || "/placeholder.png",
-    priceOriginal: typeof d.oldPrice === "number" ? d.oldPrice : undefined,
-    priceCurrent: typeof d.newPrice === "number" ? d.newPrice : undefined,
+    priceOriginal: Number.isFinite(Number(d.oldPrice)) ? Number(d.oldPrice) : undefined,
+    priceCurrent: Number.isFinite(Number(d.newPrice)) ? Number(d.newPrice) : undefined,
     expiresAt: d.expiresAt || undefined,
     url: d.deepLink || undefined,
   };
@@ -29,6 +30,7 @@ const toSlug = (s) => String(s || "deal").toLowerCase().replace(/[^a-z0-9]+/g, "
 export default function DealDetailPage() {
   const router = useRouter();
   const { token } = useAuth();
+  const { isSaved, toggle } = useSavedDeals();
   const routeParams = useParams();
   const slugParam = String(routeParams.slug || "");
   const [deal, setDeal] = useState(null);
@@ -97,16 +99,48 @@ export default function DealDetailPage() {
   const current = Math.min(deal.priceOriginal ?? 0, deal.priceCurrent ?? 0);
   const percent = original > 0 ? Math.floor(((original - current) / original) * 100) : null;
 
+  const saved = isSaved(deal.id);
+
   return (
     <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="relative rounded-2xl overflow-hidden border border-foreground/10 shadow-sm">
           <Image src={deal.image} alt={deal.title} width={1200} height={800} className="w-full h-[320px] sm:h-[420px] object-cover" />
-          {percent !== null && (
-            <span className="absolute top-3 right-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary text-white text-xs font-semibold shadow">
-              {percent}% Off
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60" />
+          {percent !== null && percent > 0 && (
+            <div className="absolute top-3 left-3 z-10">
+              <div className="relative">
+                <div className="bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-1.5 rounded-lg font-bold text-sm shadow-lg">
+                  {percent}% OFF
+                </div>
+                <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-red-600 rotate-45"></div>
+              </div>
+            </div>
+          )}
+          {original > 0 && current >= 0 && original > current && (
+            <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-green-600 text-white text-xs font-semibold shadow">
+              Save {formatNaira(original - current)}
             </span>
           )}
+          <button
+            onClick={async () => {
+              try {
+                await fetch(`${API_BASE}/deals/save`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+                  body: JSON.stringify({ dealId: deal.id, dealTitle: deal.title, dealData: deal }),
+                });
+              } catch {}
+              toggle(deal);
+            }}
+            className="absolute top-3 right-3 inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm hover:bg-white transition-shadow shadow-lg hover:shadow-xl"
+            aria-pressed={saved}
+            aria-label={saved ? "Unsave deal" : "Save deal"}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={`h-5 w-5 ${saved ? "text-red-500 fill-current" : "text-gray-700"}`} fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+          </button>
         </div>
         <div className="flex flex-col">
           <h1 className="text-2xl font-bold">{deal.title}</h1>
@@ -136,7 +170,6 @@ export default function DealDetailPage() {
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            
             <a
               href={`https://wa.me/?text=${encodeURIComponent(`${deal.title} ${deal.url || (typeof window !== "undefined" ? window.location.href : "")}`)}`}
               target="_blank"
@@ -167,8 +200,6 @@ export default function DealDetailPage() {
           </div>
         </div>
       </div>
-
-      
     </main>
   );
 }
