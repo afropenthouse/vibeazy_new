@@ -206,7 +206,7 @@ export default function AdminDealsPage() {
         : null;
       const payload = {
         title: (form.title || "").slice(0, 31),
-        description: form.description,
+        description: (form.description || "").slice(0, 83),
         merchantName: form.merchantName,
         city: form.city,
         category: form.category || null,
@@ -450,6 +450,7 @@ export default function AdminDealsPage() {
                       name="description"
                       value={form.description}
                       onChange={handleChange}
+                      maxLength={83}
                       rows={3}
                       className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
                       placeholder="Describe the deal..."

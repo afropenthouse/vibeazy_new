@@ -79,6 +79,7 @@ function SubmitDealPageInner() {
       const token = localStorage.getItem("authToken");
       const payload = {
         ...form,
+        description: (form.description || "").slice(0, 83),
         imageUrl,
         city: "Lagos",
         title: (form.title || "").slice(0, 31),
@@ -437,6 +438,7 @@ function SubmitDealPageInner() {
                 value={form.description}
                 onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
                 required
+                maxLength={83}
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
                 placeholder="What is this deal about?"

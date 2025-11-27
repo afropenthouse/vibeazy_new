@@ -587,6 +587,7 @@ router.patch("/deals/:id", adminAuth, async (req, res) => {
     };
 
     const data = {};
+    if (has(body.title)) data.title = String(body.title).slice(0, 31);
     if (has(body.description)) data.description = body.description || null;
     if (has(body.merchantName)) data.merchantName = body.merchantName;
     if (has(body.city)) data.city = body.city;
