@@ -3,75 +3,38 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
-const slides = [
-  // {
-  //   // First slide as a 6-image collage to highlight major categories
-  //   // Ensure all entries are valid public paths (start with '/')
-  //   images: [
-  //     "/enter.webp",
-  //     "/vegetable.webp",
-  //     "/fashionhero.webp",
-  //     "/spa22.webp",
-  //     "/hotel1.webp",
-  //     "/air1.jpg",
-  //   ],
-  //   alt: "All Discounts & Deals in Nigeria in One Place.",
-  //   headline: "All Discounts & Deals in Nigeria in One Place.",
-  //   sub: "Search and claim the best offers before they expire.",
-  // },
-  // {
-  //   src: "/supermarket.webp",
-  //   alt: "Restaurants Deals",
-  //   headline: "Buy More, Spend Less",
-  //   sub: "Get deals from supermarkets near you",
-  // },
-  // {
-  //   src: "/fashion.webp",
-  //   alt: "Beauty & Spas",
-  //   headline: "Glow for Less",
-  //   sub: "Get discounts from top fashion brands",
-  // },
-  // designed image
-  
+const desktopSlides = [
   {
     src: "/discount.png",
     alt: "Hotels & Dining",
     headline: "",
     sub: "",
   },
-
   {
     src: "/discount_2.png",
     alt: "Hotels & Dining",
     headline: "",
     sub: "",
   },
-
   {
     src: "/v4.png",
     alt: "Hotels & Dining",
     headline: "",
     sub: "",
   },
-
   {
     src: "/discount_3.png",
     alt: "Hotels & Dining",
     headline: "",
     sub: "",
   },
-
-  
-  
   {
     src: "/v3.png",
     alt: "Hotels & Dining",
     headline: "",
     sub: "",
   },
-  
   {
     src: "/v5.png",
     alt: "Hotels & Dining",
@@ -80,12 +43,53 @@ const slides = [
   },
 ];
 
+const mobileSlides = [
+  {
+    src: "/mobile1.png",
+    alt: "Mobile Deal 1",
+    headline: "",
+    sub: "",
+  },
+  {
+    src: "/mobile2.png",
+    alt: "Mobile Deal 2",
+    headline: "",
+    sub: "",
+  },
+  {
+    src: "/mobile3.png",
+    alt: "Mobile Deal 3",
+    headline: "",
+    sub: "",
+  },
+  {
+    src: "/mobile4.png",
+    alt: "Mobile Deal 4",
+    headline: "",
+    sub: "",
+  },
+  {
+    src: "/mobile5.png",
+    alt: "Mobile Deal 5",
+    headline: "",
+    sub: "",
+  },
+];
+
 export default function Hero() {
   const [index, setIndex] = useState(0);
-  const router = useRouter();
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const slides = isMobile ? mobileSlides : desktopSlides;
 
   // Auto-advance: first slide 10s, others 5s
-  //10000
   useEffect(() => {
     if (slides.length <= 1) return;
     const duration = index === 0 ? 3000 : 4000;
@@ -93,8 +97,7 @@ export default function Hero() {
       setIndex((i) => (i + 1) % slides.length);
     }, duration);
     return () => clearTimeout(id);
-  }, [index]);
-
+  }, [index, slides.length]);
 
   // Helper to split headline on comma and render rest on a new line
   const renderHeadline = (text) => {
@@ -108,20 +111,19 @@ export default function Hero() {
     );
   };
 
-  // For the discount slide (first slide in array), use a shorter height on mobile
-  const slideHeightClass =
-    index === 0
-      ? "relative h-[28vh] sm:h-[55vh] lg:h-[60vh]"
-      : "relative h-[45vh] sm:h-[55vh] lg:h-[60vh]";
+  const getImageClassName = () => {
+    // return isMobile ? "object-contain" : "object-cover";
+    return "object-cover";
+  };
 
   return (
     <section className="relative overflow-hidden">
-      <div className={slideHeightClass}>
+      {/* Wider container on mobile with same height */}
+      <div className="relative h-80 sm:h-72 lg:h-80 w-full">
         {/* Background image or collage for first slide */}
         {slides[index].images ? (
           <div className="absolute inset-0 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-0 p-0">
             {slides[index].images.map((img, i) => {
-              // normalize src: if a filename was provided without leading slash, add it
               const src = typeof img === "string" && !img.startsWith("/") && !img.startsWith("http") ? `/${img}` : img;
               return (
                 <div
@@ -132,7 +134,8 @@ export default function Hero() {
                     src={src}
                     alt={slides[index].alt}
                     fill
-                    className="object-cover"
+                    sizes="100vw"
+                    className={getImageClassName()}
                     priority
                   />
                 </div>
@@ -140,16 +143,18 @@ export default function Hero() {
             })}
           </div>
         ) : (
-          <Image
-            src={slides[index].src}
-            alt={slides[index].alt}
-            fill
-            className={index === 0 ? "object-contain object-center" : "object-cover"}
-            priority
-          />
+          <div className={`absolute inset-0 ${isMobile ? 'w-full flex justify-center' : ''}`}>
+            <Image
+              src={slides[index].src}
+              alt={slides[index].alt}
+              fill
+              sizes="100vw"
+              className={getImageClassName()}
+              priority={index === 0}
+            />
+          </div>
         )}
 
-        {/* bg-black/40  for opacity */}
         {/* Overlay without blur, allow clicks to pass through */}
         <div className="absolute inset-0 bg-black/0 pointer-events-none" />
 
@@ -171,11 +176,10 @@ export default function Hero() {
                 <p className="mt-3 sm:mt-4 text-white/80 text-sm sm:text-base">
                   {slides[index].sub}
                 </p>
-                {/* removed inline search per request */}
               </motion.div>
             </AnimatePresence>
 
-            {/* Static CTA buttons (moved outside the animated text block so they don't animate) */}
+            {/* Static CTA buttons */}
             <div className="mt-8 sm:mt-10 flex gap-3">
               {/* <Link
                 href="#hot-deals"
@@ -185,7 +189,6 @@ export default function Hero() {
               </Link> */}
             </div>
           </div>
-          
         </div>
 
         {/* Indicators (hidden when there's only one slide) */}
