@@ -27,17 +27,19 @@ function SubmitDealPageInner() {
     newPrice: "",
     expiresAt: "",
     deepLink: "",
+    potentialCustomers: "",
   });
   const readyForPayment = Boolean(
     (form.merchantName || "").trim() &&
     (form.category || "").trim() &&
     (form.description || "").trim() &&
     Number(form.oldPrice) > 0 &&
-    Number(form.newPrice) > 0
+    Number(form.newPrice) > 0 &&
+    Number(form.potentialCustomers) > 0
   );
-  const finalPrice = Number(form.newPrice) > 0 ? Number(form.newPrice) : 0;
-  const rate = finalPrice === 0 ? 0 : finalPrice < 100000 ? 0.20 : finalPrice <= 500000 ? 0.10 : 0.05;
-  const fee = Math.round(finalPrice * rate);
+  const LEAD_COST_NAIRA = 100;
+  const fee = Math.max(0, Math.round(Number(form.potentialCustomers || 0) * LEAD_COST_NAIRA));
+  const rate = LEAD_COST_NAIRA;
   const formatNGN = (n) => new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(Math.max(0, Math.round(n)));
 
   // Load categories from backend (admin public categories) and refresh on updates
@@ -64,7 +66,7 @@ function SubmitDealPageInner() {
   }, []);
 
   useEffect(() => {
-    setForm({ title: "", description: "", merchantName: "", category: "", oldPrice: "", newPrice: "", expiresAt: "", deepLink: "" });
+    setForm({ title: "", description: "", merchantName: "", category: "", oldPrice: "", newPrice: "", expiresAt: "", deepLink: "", potentialCustomers: "" });
     setImageUrl("");
     setPaid(false);
     setPaymentRef("");
@@ -94,7 +96,7 @@ function SubmitDealPageInner() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Submission failed");
-      setForm({ title: "", description: "", merchantName: "", category: "", oldPrice: "", newPrice: "", expiresAt: "", deepLink: "" });
+      setForm({ title: "", description: "", merchantName: "", category: "", oldPrice: "", newPrice: "", expiresAt: "", deepLink: "", potentialCustomers: "" });
       setImageUrl("");
       setPaid(false);
       setPaymentRef("");
@@ -141,6 +143,7 @@ function SubmitDealPageInner() {
                   newPrice: draft.newPrice || "",
                   expiresAt: draft.expiresAt || "",
                   deepLink: draft.deepLink || "",
+                  potentialCustomers: draft.potentialCustomers || "",
                 });
                 if (draft.imageUrl) setImageUrl(draft.imageUrl);
               }
@@ -251,7 +254,7 @@ function SubmitDealPageInner() {
       const res = await fetch(`${API_BASE}/payments/init`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ amount: fee, metadata: { fee, newPrice: Number(form.newPrice), merchantName: form.merchantName } }),
+        body: JSON.stringify({ amount: fee, metadata: { purpose: "deal_leads", leadPrice: LEAD_COST_NAIRA, potentialCustomers: Number(form.potentialCustomers || 0), total: fee, merchantName: form.merchantName } }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Payment init failed");
@@ -472,6 +475,23 @@ function SubmitDealPageInner() {
               </div>
             </div>
 
+            {/* Potential Customers */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Potential customers *
+              </label>
+              <input
+                type="number"
+                min={1}
+                value={form.potentialCustomers}
+                onChange={(e) => setForm(f => ({ ...f, potentialCustomers: e.target.value }))}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                placeholder="e.g., 50"
+              />
+              <p className="text-xs text-gray-500 mt-1">We charge ₦100 per lead. Enter how many you want.</p>
+            </div>
+
             {/* Error/Success Message */}
             {error && (
               <div className={`p-3 rounded-lg text-sm ${
@@ -493,7 +513,7 @@ function SubmitDealPageInner() {
                   <div className="hidden sm:block h-10 w-px bg-slate-200" />
                   <div className="rounded-lg bg-slate-100 px-3 py-2">
                     <div className="text-xs text-slate-600">Rate</div>
-                    <div className="text-sm font-medium text-slate-800">{Math.round(rate * 100)}% of {finalPrice > 0 ? formatNGN(finalPrice) : "—"}</div>
+                    <div className="text-sm font-medium text-slate-800">{formatNGN(rate)} per lead • {Number(form.potentialCustomers || 0)} leads</div>
                   </div>
                 </div>
                 <button

@@ -389,9 +389,7 @@ export default function MyDealsPage() {
                         )}
                       </div>
 
-                      <div className="flex-shrink-0 ml-2">
-                        <span className={statusClasses}>{statusLabel}</span>
-                      </div>
+                      <div className="flex-shrink-0 ml-2"></div>
                     </div>
 
                     <p className="text-slate-700 text-sm mt-2 mb-2 break-words line-clamp-3">{it.description || "No description provided"}</p>

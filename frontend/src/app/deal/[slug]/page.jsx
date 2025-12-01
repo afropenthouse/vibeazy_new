@@ -29,7 +29,7 @@ const toSlug = (s) => String(s || "deal").toLowerCase().replace(/[^a-z0-9]+/g, "
 
 export default function DealDetailPage() {
   const router = useRouter();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { isSaved, toggle } = useSavedDeals();
   const routeParams = useParams();
   const slugParam = String(routeParams.slug || "");
@@ -102,9 +102,22 @@ export default function DealDetailPage() {
 
   const saved = isSaved(deal.id);
 
-  const getShareUrl = () => deal?.url || (typeof window !== "undefined" ? window.location.href : "");
+  const getBaseOrigin = () => {
+    const envBase = (process.env.NEXT_PUBLIC_WEB_URL || "").replace(/\/+$/, "");
+    if (envBase) return envBase;
+    if (typeof window !== "undefined") return window.location.origin;
+    return "http://localhost:3000";
+  };
+  const getReferralUrl = () => {
+    const origin = getBaseOrigin();
+    const idPart = deal?.id != null ? String(deal.id) : slugParam;
+    const base = `${origin}/deal/${encodeURIComponent(idPart)}`;
+    const ref = user?.id;
+    return ref ? `${base}?ref=${encodeURIComponent(ref)}` : base;
+  };
+  const getShareUrl = () => getReferralUrl();
   const handleInstagramShare = async () => {
-    const u = getShareUrl();
+    const u = getReferralUrl();
     try {
       if (navigator.share) {
         await navigator.share({ title: deal?.title || "", text: deal?.title || "", url: u });
@@ -118,7 +131,6 @@ export default function DealDetailPage() {
     } catch {}
     setShareTip("Link copied. Paste in Instagram.");
     try { window.open("https://www.instagram.com/", "_blank"); } catch {}
-    setTimeout(() => setShareTip(""), 3000);
   };
 
   return (
@@ -194,7 +206,7 @@ export default function DealDetailPage() {
       </div>
       <div className="mt-10 flex flex-wrap items-center justify-center gap-2">
         <a
-          href={`https://wa.me/?text=${encodeURIComponent(`${deal.title} ${getShareUrl()}`)}`}
+          href={`https://wa.me/?text=${encodeURIComponent(`${deal.title} ${getReferralUrl()}`)}`}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm bg-[#25D366] text-white hover:brightness-110"
@@ -203,7 +215,7 @@ export default function DealDetailPage() {
           <span>WhatsApp</span>
         </a>
         <a
-          href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(getShareUrl())}`}
+          href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(getReferralUrl())}`}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm bg-[#1877F2] text-white hover:brightness-110"
