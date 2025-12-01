@@ -111,7 +111,7 @@ export default function DealDetailPage() {
   const getReferralUrl = () => {
     const origin = getBaseOrigin();
     const idPart = deal?.id != null ? String(deal.id) : slugParam;
-    const base = `${origin}/deal/${encodeURIComponent(idPart)}`;
+    const base = `${origin}/go/deal/${encodeURIComponent(idPart)}`;
     const ref = user?.id;
     return ref ? `${base}?ref=${encodeURIComponent(ref)}` : base;
   };

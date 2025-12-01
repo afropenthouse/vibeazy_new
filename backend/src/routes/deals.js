@@ -309,4 +309,27 @@ router.get("/interest/users/by-deal/:dealId", auth, async (req, res) => {
   }
 });
 
+// Redirect to merchant product link for sharing
+router.get("/go/deal/:dealId", async (req, res) => {
+  const prisma = req.prisma;
+  const dealId = Number(req.params.dealId);
+  if (!Number.isFinite(dealId)) return res.status(400).send("Invalid dealId");
+  try {
+    const deal = await prisma.deal.findUnique({ where: { id: dealId } });
+    const fallbackBase = (process.env.WEB_URL || process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3000").replace(/\/+$/, "");
+    const baseFallback = `${fallbackBase}/deal/${dealId}`;
+    let target = deal?.deepLink || null;
+    if (!target) return res.redirect(baseFallback);
+    const url = new URL(target);
+    const ref = req.query.ref ? String(req.query.ref) : null;
+    if (ref) url.searchParams.set("ref", ref);
+    url.searchParams.set("utm_source", "vibeazy");
+    url.searchParams.set("utm_medium", "share");
+    url.searchParams.set("utm_campaign", "deal_referral");
+    return res.redirect(url.toString());
+  } catch (e) {
+    return res.redirect((process.env.WEB_URL || process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3000") + `/deal/${dealId}`);
+  }
+});
+
 module.exports = router;
