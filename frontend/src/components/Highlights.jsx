@@ -1,7 +1,7 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import DiscountCard from "@/components/DiscountCard";
-import { DEALS_DATA } from "@/components/SearchFilter";
+ 
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -40,17 +40,17 @@ function useDeals() {
     let cancelled = false;
     async function load() {
       try {
-        const res = await fetch(`${API_BASE}/admin/public/deals?paidOnly=true`);
+        const res = await fetch(`${API_BASE}/admin/public/deals?limit=40`);
         const data = await res.json();
         if (!cancelled) {
-          if (res.ok && Array.isArray(data.deals) && data.deals.length > 0) {
+          if (res.ok && Array.isArray(data.deals)) {
             setDeals(data.deals.map(mapApiDealToCard));
           } else {
-            setDeals(DEALS_DATA);
+            setDeals([]);
           }
         }
       } catch {
-        if (!cancelled) setDeals(DEALS_DATA);
+        if (!cancelled) setDeals([]);
       }
     }
     load();
@@ -203,43 +203,27 @@ function Carousel({ title, items, compact = false }) {
 
 export default function Highlights() {
   const deals = useDeals();
-
-  const topDiscounts = useMemo(() => {
-    const percent = (d) => {
-      const dp = Number(d.discountPct);
-      if (Number.isFinite(dp) && dp > 0) return Math.floor(dp);
-      const o = Number(d.priceOriginal);
-      const n = Number(d.priceCurrent);
-      if (!Number.isFinite(o) || !Number.isFinite(n) || o <= 0 || n <= 0 || n >= o) return 0;
-      return Math.floor(((o - n) / o) * 100);
-    };
-    let arr = deals.slice();
-    arr.sort((a, b) => {
-      const pa = percent(a);
-      const pb = percent(b);
-      if (pb !== pa) return pb - pa;
-      const ta = a.approvedAt ? Date.parse(a.approvedAt) : (a.createdAt ? Date.parse(a.createdAt) : 0);
-      const tb = b.approvedAt ? Date.parse(b.approvedAt) : (b.createdAt ? Date.parse(b.createdAt) : 0);
-      return tb - ta;
-    });
-    const perCat = 10;
-    const counts = {};
+  const topFour = useMemo(() => {
+    const seen = new Set();
     const out = [];
-    for (const d of arr) {
-      const cat = String(d.category || "").toLowerCase();
-      const c = counts[cat] || 0;
-      if (c < perCat) {
-        out.push(d);
-        counts[cat] = c + 1;
-      }
+    for (const d of deals) {
+      const key = d.id ?? [
+        String(d.merchantName || "").toLowerCase().trim(),
+        String(d.title || "").toLowerCase().trim(),
+        String(d.url || "").trim(),
+        String(d.image || "").trim(),
+      ].join("|");
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(d);
+      if (out.length === 4) break;
     }
     return out;
   }, [deals]);
-
   return (
     <div className="bg-white">
-      {topDiscounts.length > 0 && (
-        <Carousel title="Top Deals" items={topDiscounts} compact={true} />
+      {topFour.length > 0 && (
+        <Carousel title="Top Deals" items={topFour} compact={true} />
       )}
     </div>
   );

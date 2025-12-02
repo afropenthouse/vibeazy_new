@@ -643,7 +643,7 @@ router.delete("/deals/:id", adminAuth, async (req, res) => {
 // Public deals feed for webapp
 router.get("/public/deals", async (req, res) => {
   const prisma = req.prisma;
-  const { city, category, paidOnly } = req.query;
+  const { city, category, paidOnly, limit: limitRaw } = req.query;
   const where = { isActive: true };
   if (city) where.city = city;
   if (category) where.category = category;
@@ -669,8 +669,16 @@ router.get("/public/deals", async (req, res) => {
   } else {
     deals = await prisma.deal.findMany({ where, orderBy: [{ discountPct: "desc" }, { createdAt: "desc" }] });
   }
-  const group = new Map();
+  const seen = new Set();
+  const unique = [];
   for (const d of deals) {
+    const key = [String(d.merchantName || "").toLowerCase().trim(), String(d.title || "").toLowerCase().trim(), String(d.imageUrl || "").trim(), String(d.deepLink || "").trim()].join("|");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(d);
+  }
+  const group = new Map();
+  for (const d of unique) {
     const key = d.category || "";
     const arr = group.get(key) || [];
     arr.push(d);
@@ -693,13 +701,18 @@ router.get("/public/deals", async (req, res) => {
     }
   }
   const mixed = [];
-  let remaining = deals.length;
+  const limit = Number(limitRaw || 0);
+  let remaining = unique.length;
   while (remaining > 0) {
     for (const k of keys) {
       const arr = group.get(k);
       if (arr && arr.length) {
         mixed.push(arr.shift());
         remaining--;
+        if (limit > 0 && mixed.length >= limit) {
+          remaining = 0;
+          break;
+        }
       }
     }
   }
