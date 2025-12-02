@@ -42,6 +42,12 @@ export default function DealDetailPage() {
     try {
       const url = `${API_BASE}/deals/interest`;
       const payload = { dealId };
+      try {
+        if (typeof window !== "undefined") {
+          const rid = localStorage.getItem("referrerUserId");
+          if (rid) payload.referrerId = rid;
+        }
+      } catch {}
       const headers = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
       await fetch(url, { method: "POST", headers, body: JSON.stringify(payload), keepalive: true });
@@ -205,6 +211,13 @@ export default function DealDetailPage() {
         </div>
       </div>
       <div className="mt-10 flex flex-wrap items-center justify-center gap-2">
+        <button
+          onClick={async ()=>{ try { const u = getReferralUrl(); if (navigator.clipboard) { await navigator.clipboard.writeText(u); } setShareTip("Link copied"); setTimeout(()=>setShareTip(""),2000); } catch {} }}
+          className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm bg-foreground/10 text-foreground hover:bg-foreground/20"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 17a3 3 0 010-6h3a3 3 0 010 6H8zm8-4a3 3 0 00-3-3h-1V8h1a5 5 0 010 10h-1v-2h1a3 3 0 003-3z"/></svg>
+          <span>Copy Link</span>
+        </button>
         <a
           href={`https://wa.me/?text=${encodeURIComponent(`${deal.title} ${getReferralUrl()}`)}`}
           target="_blank"
@@ -231,6 +244,7 @@ export default function DealDetailPage() {
           <span>Instagram</span>
         </button>
         {shareTip && <div className="w-full text-center text-sm text-foreground/70 mt-2">{shareTip}</div>}
+        {user && <div className="w-full text-center text-xs text-foreground/60 mt-1">Earn ₦10 for each claim through your link</div>}
       </div>
     </main>
   );

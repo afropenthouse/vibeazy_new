@@ -195,7 +195,7 @@ router.patch("/my-submissions/:id", auth, async (req, res) => {
 // Track interest (click) for a deal or submission
 router.post("/interest", async (req, res) => {
   const prisma = req.prisma;
-  const { dealId: rawDealId, submissionId: rawSubmissionId } = req.body || {};
+  const { dealId: rawDealId, submissionId: rawSubmissionId, referrerId: rawReferrerId } = req.body || {};
   const dealId = rawDealId != null ? Number(rawDealId) : null;
   const submissionId = rawSubmissionId != null ? Number(rawSubmissionId) : null;
   if (!dealId && !submissionId) return res.status(400).json({ error: "dealId or submissionId required" });
@@ -205,18 +205,32 @@ router.post("/interest", async (req, res) => {
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
   const decoded = token ? verifyToken(token) : null;
   const userId = decoded?.id || null;
+  const referrerId = rawReferrerId != null ? Number(rawReferrerId) : null;
 
   try {
     if (userId && dealId) {
       const existing = await prisma.dealInterest.findFirst({ where: { userId, dealId } });
       if (existing) return res.json({ ok: true, existed: true });
       const created = await prisma.dealInterest.create({ data: { userId, dealId } });
+      // simple referral credit: only when a referrerId is present and different from user
+      if (referrerId && referrerId !== userId) {
+        let w = await prisma.wallet.findUnique({ where: { userId: referrerId } });
+        if (!w) w = await prisma.wallet.create({ data: { userId: referrerId, balanceKobo: 0 } });
+        const CREDIT_KOBO = Number(process.env.REFERRAL_CREDIT_KOBO || 1000);
+        await prisma.wallet.update({ where: { userId: referrerId }, data: { balanceKobo: w.balanceKobo + CREDIT_KOBO } });
+      }
       return res.json({ ok: true, interest: created });
     }
     if (userId && submissionId) {
       const existing = await prisma.dealInterest.findFirst({ where: { userId, submissionId } });
       if (existing) return res.json({ ok: true, existed: true });
       const created = await prisma.dealInterest.create({ data: { userId, submissionId } });
+      if (referrerId && referrerId !== userId) {
+        let w = await prisma.wallet.findUnique({ where: { userId: referrerId } });
+        if (!w) w = await prisma.wallet.create({ data: { userId: referrerId, balanceKobo: 0 } });
+        const CREDIT_KOBO = Number(process.env.REFERRAL_CREDIT_KOBO || 1000);
+        await prisma.wallet.update({ where: { userId: referrerId }, data: { balanceKobo: w.balanceKobo + CREDIT_KOBO } });
+      }
       return res.json({ ok: true, interest: created });
     }
     // Anonymous interest (no userId)

@@ -29,6 +29,18 @@ export default function SiteChrome({ children }) {
     };
   }, []);
 
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined") {
+        const url = new URL(window.location.href);
+        const ref = url.searchParams.get("ref");
+        if (ref) {
+          localStorage.setItem("referrerUserId", ref);
+        }
+      }
+    } catch {}
+  }, []);
+
   if (isAdmin) {
     return (
       <>

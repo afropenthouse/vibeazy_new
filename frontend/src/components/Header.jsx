@@ -148,6 +148,10 @@ export default function Header() {
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-4 w-4" stroke="currentColor" fill="none" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg>
                         Saved Deals
                       </Link>
+                      <Link href="/wallet" className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-foreground/5" role="menuitem">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-4 w-4" stroke="currentColor" fill="none" strokeWidth="2"><rect x="3" y="6" width="18" height="12" rx="3"/><path d="M16 12h5"/></svg>
+                        Wallet
+                      </Link>
                       <Link href="/submit" className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-foreground/5" role="menuitem">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
                         Create Deal

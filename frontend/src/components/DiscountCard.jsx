@@ -71,6 +71,12 @@ export default function DiscountCard({ item, compact = false, showInterestCount 
     try {
       const url = `${process.env.NEXT_PUBLIC_API_URL}/deals/interest`;
       const payload = { dealId: item.id };
+      try {
+        if (typeof window !== "undefined") {
+          const rid = localStorage.getItem("referrerUserId");
+          if (rid) payload.referrerId = rid;
+        }
+      } catch {}
       const json = JSON.stringify(payload);
       if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
         const blob = new Blob([json], { type: "application/json" });

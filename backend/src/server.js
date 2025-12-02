@@ -67,6 +67,7 @@ app.use("/payments", require("./routes/payments"));
 app.use("/admin", require("./routes/admin"));
 app.use("/newsletter", require("./routes/newsletter"));
 app.use("/sms", require("./routes/sms"));
+app.use("/wallet", require("./routes/wallet"));
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {

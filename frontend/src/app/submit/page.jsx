@@ -35,10 +35,10 @@ function SubmitDealPageInner() {
     (form.description || "").trim() &&
     Number(form.oldPrice) > 0 &&
     Number(form.newPrice) > 0 &&
-    Number(form.potentialCustomers) > 0
+    Number(form.potentialCustomers) >= 25
   );
-  const LEAD_COST_NAIRA = 100;
-  const fee = Math.max(0, Math.round(Number(form.potentialCustomers || 0) * LEAD_COST_NAIRA));
+  const LEAD_COST_NAIRA = 200;
+  const fee = Math.max(0, Math.round(Math.max(25, Number(form.potentialCustomers || 0)) * LEAD_COST_NAIRA));
   const rate = LEAD_COST_NAIRA;
   const formatNGN = (n) => new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(Math.max(0, Math.round(n)));
 
@@ -482,14 +482,14 @@ function SubmitDealPageInner() {
               </label>
               <input
                 type="number"
-                min={1}
+                min={25}
                 value={form.potentialCustomers}
                 onChange={(e) => setForm(f => ({ ...f, potentialCustomers: e.target.value }))}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
                 placeholder="e.g., 50"
               />
-              <p className="text-xs text-gray-500 mt-1">We charge ₦100 per lead. Enter how many you want.</p>
+              <p className="text-xs text-gray-500 mt-1">We charge ₦200 per lead. Minimum 25 leads.</p>
             </div>
 
             {/* Error/Success Message */}
@@ -513,7 +513,7 @@ function SubmitDealPageInner() {
                   <div className="hidden sm:block h-10 w-px bg-slate-200" />
                   <div className="rounded-lg bg-slate-100 px-3 py-2">
                     <div className="text-xs text-slate-600">Rate</div>
-                    <div className="text-sm font-medium text-slate-800">{formatNGN(rate)} per lead • {Number(form.potentialCustomers || 0)} leads</div>
+                    <div className="text-sm font-medium text-slate-800">{formatNGN(rate)} per lead • {Math.max(25, Number(form.potentialCustomers || 0))} leads</div>
                   </div>
                 </div>
                 <button

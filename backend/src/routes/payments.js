@@ -18,7 +18,21 @@ router.post("/init", auth, async (req, res) => {
   const secret = process.env.PAYSTACK_SECRET;
   if (!secret) return res.status(500).json({ error: "Paystack not configured" });
   const email = req.user.email;
-  const amountKobo = toKobo(amount);
+  const purpose = metadata?.purpose || null;
+  let amountKobo = 0;
+  if (purpose === "deal_leads") {
+    const priceNaira = Number(process.env.LEAD_PRICE_NAIRA || 200);
+    const minLeads = Number(process.env.LEAD_MIN_COUNT || 25);
+    const leadsRaw = Number(metadata?.potentialCustomers || 0);
+    const leads = Math.max(minLeads, Number.isFinite(leadsRaw) ? leadsRaw : 0);
+    amountKobo = Math.round(leads * priceNaira * 100);
+    // augment metadata for record-keeping
+    metadata.leads = leads;
+    metadata.priceNaira = priceNaira;
+    metadata.expectedAmountKobo = amountKobo;
+  } else {
+    amountKobo = toKobo(amount);
+  }
   if (!amountKobo) return res.status(400).json({ error: "Invalid amount" });
 
   const reference = randomUUID();
